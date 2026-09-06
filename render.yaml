@@ -10,10 +10,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: DB_PATH
-        value: /data/database.sqlite
+        value: /app/server/src/config/database.sqlite
       - key: UPLOADS_DIR
-        value: /data/uploads
-    disk:
-      name: amman-violations-data
-      mountPath: /data
-      sizeGB: 1
+        value: /app/uploads
