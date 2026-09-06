@@ -6,3 +6,13 @@ client/dist
 .gitignore
 *.log
 *.bat
+*.md
+*.pdf
+*.html
+server/.env
+.env
+server/src/config/*.sqlite
+server/src/config/*.sqlite-shm
+server/src/config/*.sqlite-wal
+uploads/
+server/uploads/

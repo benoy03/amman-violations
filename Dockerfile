@@ -1,6 +1,6 @@
 # ==============================================================================
 # 🏛️ أمانة عمّان الكبرى — مديرية الرقابة الآلية والتحكم (قسم المخالفات)
-# 🐳 Dockerfile for Fly.io Production Deployment
+# 🐳 Dockerfile for Railway / Fly.io Production Deployment
 # ==============================================================================
 FROM node:20-bookworm-slim
 
@@ -31,14 +31,13 @@ RUN npm --prefix client run build
 # Copy server source
 COPY server/ ./server/
 
-# /data is the persistent volume mount point (set by fly.toml)
-# Create fallback dirs in case volume isn't mounted (local testing)
-RUN mkdir -p /data/uploads && chmod -R 777 /data
+# Create data directory for SQLite database and uploads
+RUN mkdir -p /app/data/uploads && chmod -R 777 /app/data
 
 ENV NODE_ENV=production
 ENV PORT=5000
-ENV DB_PATH=/data/database.sqlite
-ENV UPLOADS_DIR=/data/uploads
+ENV DB_PATH=/app/data/database.sqlite
+ENV UPLOADS_DIR=/app/data/uploads
 
 EXPOSE 5000
 
