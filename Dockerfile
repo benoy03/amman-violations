@@ -1,10 +1,10 @@
 # ==============================================================================
 # 🏛️ أمانة عمّان الكبرى — مديرية الرقابة الآلية والتحكم (قسم المخالفات)
-# 🐳 Dockerfile for 24/7 Production Deployment
+# 🐳 Dockerfile for Fly.io Production Deployment
 # ==============================================================================
 FROM node:20-bookworm-slim
 
-# تثبيت أدوات البناء الأساسية لدعم better-sqlite3 على أي معالج
+# Build tools required for better-sqlite3 native compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
@@ -13,32 +13,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# نسخ ملفات الحزم لتسريع عملية البناء (Caching)
+# Copy package manifests first for layer caching
 COPY package*.json ./
 COPY server/package*.json ./server/
 COPY client/package*.json ./client/
 
-# تثبيت الحزم
-# تثبيت حزم الخادم
+# Install server dependencies
 RUN npm --prefix server install
-# تثبيت حزم الواجهة بالكامل (بما فيها أدوات vite و tailwindcss للبناء)
+
+# Install client dependencies (including dev tools for Vite build)
 RUN npm --prefix client install --include=dev
 
-# نسخ كود الواجهة وبناؤها
+# Build the frontend
 COPY client/ ./client/
 RUN npm --prefix client run build
 
-# نسخ كود الخادم وقاعدة البيانات
+# Copy server source
 COPY server/ ./server/
 
-# إعداد المجلدات والصلاحيات
-RUN mkdir -p /app/uploads && chmod -R 777 /app/uploads /app/server/src/config
+# /data is the persistent volume mount point (set by fly.toml)
+# Create fallback dirs in case volume isn't mounted (local testing)
+RUN mkdir -p /data/uploads && chmod -R 777 /data
 
-# متغيرات التشغيل النهائية
 ENV NODE_ENV=production
 ENV PORT=5000
-ENV DB_PATH=/app/server/src/config/database.sqlite
-ENV UPLOADS_DIR=/app/uploads
+ENV DB_PATH=/data/database.sqlite
+ENV UPLOADS_DIR=/data/uploads
 
 EXPOSE 5000
 

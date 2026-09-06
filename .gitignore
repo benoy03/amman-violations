@@ -1,7 +1,28 @@
+# Dependencies
 node_modules/
 server/node_modules/
 client/node_modules/
+
+# Environment variables (never commit secrets)
 .env
+server/.env
+
+# SQLite database files (managed by server at runtime)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# User-uploaded files
+uploads/
+server/uploads/
+
+# Frontend build output
+client/dist/
+
+# OS junk
 .DS_Store
 Thumbs.db
+
+# Logs
 *.log
+npm-debug.log*
