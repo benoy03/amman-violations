@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Cairo', sans-serif;
+  }
+}
+
+/* تنسيقات مخصصة للطباعة والتصدير */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* إخفاء عناصر التحكم والأزرار وأشرطة التنقل أثناء الطباعة */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  .btn,
+  .pagination-container,
+  .filter-bar,
+  .actions-bar,
+  .toast-alert {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .printable-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th, td {
+    border: 1px solid #475569 !important;
+    padding: 6px 8px !important;
+    color: #000000 !important;
+    font-size: 9.5pt !important;
+  }
+
+  th {
+    background-color: #e2e8f0 !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+}
