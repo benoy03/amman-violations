@@ -1,15 +1,13 @@
 services:
   - type: web
     name: amman-camera-violations
-    runtime: docker
+    runtime: node
     plan: free
     region: frankfurt
+    buildCommand: npm --prefix client install && npm --prefix client run build && npm --prefix server install
+    startCommand: node server/src/server.js
     envVars:
       - key: PORT
         value: 5000
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: /app/server/src/config/database.sqlite
-      - key: UPLOADS_DIR
-        value: /app/uploads
