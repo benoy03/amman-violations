@@ -131,9 +131,65 @@ function bulkCreateLocations(req, res, next) {
   }
 }
 
+/**
+ * تعديل موقع كاميرا
+ */
+function updateLocation(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, zone } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'اسم موقع الكاميرا مطلوب' });
+    }
+
+    const cleanName = name.trim();
+    const cleanZone = zone ? zone.trim() : 'عمّان';
+
+    const existing = db.prepare('SELECT * FROM camera_locations WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'موقع الكاميرا غير موجود' });
+    }
+
+    if (cleanName !== existing.name) {
+      const duplicate = db.prepare('SELECT id FROM camera_locations WHERE name = ? AND id != ?').get(cleanName, id);
+      if (duplicate) {
+        return res.status(400).json({ success: false, message: 'موقع كاميرا بهذا الاسم مسجل مسبقاً' });
+      }
+    }
+
+    db.prepare('UPDATE camera_locations SET name = ?, zone = ? WHERE id = ?').run(cleanName, cleanZone, id);
+
+    // تحديث المخالفات المسجلة بهذا الموقع إن تغير الاسم
+    if (cleanName !== existing.name) {
+      try {
+        db.prepare('UPDATE violations SET camera_location = ? WHERE camera_location = ?').run(cleanName, existing.name);
+      } catch (err) {
+        console.error('ملاحظة أثناء تحديث المخالفات بموقع الكاميرا الجديد:', err.message);
+      }
+    }
+
+    logAction({
+      req,
+      action: 'تعديل موقع كاميرا',
+      entity: 'camera_locations',
+      entityId: id,
+      details: `تعديل موقع: من (${existing.name} - ${existing.zone}) إلى (${cleanName} - ${cleanZone})`
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث موقع الكاميرا بنجاح'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getLocations,
   createLocation,
+  updateLocation,
   deleteLocation,
   bulkCreateLocations
 };

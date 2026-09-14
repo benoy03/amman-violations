@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { getArabicDayName, getTodayDateString } from '../utils/dateHelpers';
+import { useToast } from '../context/ToastContext';
 import JordanianPlate from '../components/JordanianPlate';
 import PlateDiffViewer from '../components/PlateDiffViewer';
 import {
@@ -25,7 +26,9 @@ import {
   Upload,
   Image as ImageIcon,
   Eye,
-  X
+  X,
+  Pin,
+  Sparkles
 } from 'lucide-react';
 
 const COMMON_ERROR_TYPES = [
@@ -73,6 +76,11 @@ export default function EntryPage() {
   const [reporters, setReporters] = useState([]);
   const [locations, setLocations] = useState([]);
 
+  const toast = useToast();
+  const [pinShiftData, setPinShiftData] = useState(() => {
+    return localStorage.getItem('aml_pin_shift_data') === 'true';
+  });
+
   const [numberStatus, setNumberStatus] = useState({ checking: false, exists: false, message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -80,6 +88,23 @@ export default function EntryPage() {
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   const violationInputRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('aml_pin_shift_data', String(pinShiftData));
+  }, [pinShiftData]);
+
+  // اختصار Ctrl + Enter للترحيل والحفظ المباشر
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.getElementById('violation-entry-form');
+        if (formEl) formEl.requestSubmit();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -182,39 +207,48 @@ export default function EntryPage() {
     setAlert({ show: false, type: '', message: '' });
 
     if (numberStatus.exists) {
-      setAlert({
-        show: true,
-        type: 'error',
-        message: 'لا يمكن الترحيل: رقم المخالفة مسجل مسبقاً! يرجى إدخال رقم جديد.'
-      });
+      const msg = 'لا يمكن الترحيل: رقم المخالفة مسجل مسبقاً! يرجى إدخال رقم جديد.';
+      toast.error(msg);
+      setAlert({ show: true, type: 'error', message: msg });
       return;
     }
 
     setSubmitting(true);
     try {
       const res = await api.post('/violations', formData);
-      setAlert({
-        show: true,
-        type: 'success',
-        message: `تم الترحيل بنجاح! تم تسجيل المخالفة برقم: ${formData.violation_number}`
-      });
+      const successMsg = `تم الترحيل بنجاح! تم تسجيل المخالفة برقم: ${formData.violation_number}`;
+      toast.success(successMsg);
+      setAlert({ show: true, type: 'success', message: successMsg });
 
-      setFormData({
-        ...initialFormState,
-        entry_date: today,
-        entry_day: getArabicDayName(today)
-      });
+      if (pinShiftData) {
+        // نحتفظ ببيانات الوردية (الموظفون والموقع) ونفرغ فقط أرقام اللوحات والمخالفة
+        setFormData((prev) => ({
+          ...prev,
+          violation_number: '',
+          wrong_vehicle_number: '',
+          correct_vehicle_number: '',
+          image_url: '',
+          notes: '',
+          entry_date: today,
+          entry_day: getArabicDayName(today)
+        }));
+      } else {
+        setFormData({
+          ...initialFormState,
+          entry_date: today,
+          entry_day: getArabicDayName(today)
+        });
+      }
+
       setNumberStatus({ checking: false, exists: false, message: '' });
 
       if (violationInputRef.current) {
         violationInputRef.current.focus();
       }
     } catch (err) {
-      setAlert({
-        show: true,
-        type: 'error',
-        message: err.response?.data?.message || 'حدث خطأ أثناء ترحيل البيانات، يرجى المحاولة ثانية'
-      });
+      const errorMsg = err.response?.data?.message || 'حدث خطأ أثناء ترحيل البيانات، يرجى المحاولة ثانية';
+      toast.error(errorMsg);
+      setAlert({ show: true, type: 'error', message: errorMsg });
     } finally {
       setSubmitting(false);
     }
@@ -296,7 +330,7 @@ export default function EntryPage() {
       )}
 
       {/* استمارة الإدخال الرئيسية */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200/90 space-y-8">
+      <form id="violation-entry-form" onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200/90 space-y-8">
         {/* القسم 1: بيانات المخالفة والمركبة */}
         <div>
           <div className="flex items-center gap-2 pb-3 mb-6 border-b border-slate-100 text-brand-900 font-black text-base">
@@ -486,9 +520,25 @@ export default function EntryPage() {
 
         {/* القسم 2: بيانات الموظفين (المستخرج، المدقق، المعدل، المبلغ) */}
         <div>
-          <div className="flex items-center gap-2 pb-3 mb-6 border-b border-slate-100 text-brand-900 font-black text-base">
-            <User className="w-5 h-5 text-brand-600" />
-            <span>فريق العمل والمسؤولون عن السجل</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-6 border-b border-slate-100">
+            <div className="flex items-center gap-2 text-brand-900 font-black text-base">
+              <User className="w-5 h-5 text-brand-600" />
+              <span>فريق العمل والمسؤولون عن السجل</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPinShiftData(!pinShiftData)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition border ${
+                pinShiftData
+                  ? 'bg-amber-500/15 text-amber-900 border-amber-400/60 shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+              }`}
+              title="تثبيت طاقم العمل وموقع الكاميرا حتى لا تضطر لإعادة اختيارهم مع كل مخالفة"
+            >
+              <Pin className={`w-3.5 h-3.5 ${pinShiftData ? 'text-amber-600 rotate-45' : 'text-slate-400'}`} />
+              <span>{pinShiftData ? '📌 مثبت لطاقم الوردية الحالية' : 'تثبيت طاقم الوردية للإدخال السريع'}</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -720,6 +770,9 @@ export default function EntryPage() {
             >
               <Save className="w-5 h-5" />
               <span>{submitting ? 'جاري الترحيل...' : 'ترحيل المعلومات (حفظ المخالفة)'}</span>
+              <kbd className="hidden md:inline-block px-2 py-0.5 text-[10px] font-mono bg-black/20 text-emerald-100 rounded-md border border-white/20">
+                Ctrl + Enter
+              </kbd>
             </button>
           </div>
         </div>

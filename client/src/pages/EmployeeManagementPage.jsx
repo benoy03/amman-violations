@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axiosInstance';
 import ConfirmModal from '../components/ConfirmModal';
 import BulkEmployeeModal from '../components/BulkEmployeeModal';
+import EditEmployeeModal from '../components/EditEmployeeModal';
+import { useToast } from '../context/ToastContext';
 import {
   Users,
   UserPlus,
@@ -15,7 +17,8 @@ import {
   Radio,
   MapPin,
   Plus,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Edit3
 } from 'lucide-react';
 
 const TABS = [
@@ -40,9 +43,16 @@ export default function EmployeeManagementPage() {
   const [locationName, setLocationName] = useState('');
   const [locationZone, setLocationZone] = useState('');
 
+  const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
+
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    item: null,
+    isLocation: false
+  });
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -377,14 +387,23 @@ export default function EmployeeManagementPage() {
                       <tr key={loc.id} className="hover:bg-slate-50 transition">
                         <td className="p-3 font-bold text-slate-800">{loc.name}</td>
                         <td className="p-3 text-slate-600">{loc.zone}</td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => openLocationDeleteConfirmation(loc)}
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                            title="حذف الموقع"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setEditModal({ isOpen: true, item: loc, isLocation: true })}
+                              className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition"
+                              title="تعديل موقع الكاميرا"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => openLocationDeleteConfirmation(loc)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="حذف الموقع"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -518,16 +537,25 @@ export default function EmployeeManagementPage() {
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-center">
-                          {emp.is_active === 1 && (
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1">
                             <button
-                              onClick={() => openDeleteConfirmation(emp)}
-                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200"
-                              title="إلغاء التفعيل / حذف"
+                              onClick={() => setEditModal({ isOpen: true, item: emp, isLocation: false })}
+                              className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition border border-transparent hover:border-brand-200"
+                              title="تعديل بيانات الموظف"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Edit3 className="w-4 h-4" />
                             </button>
-                          )}
+                            {emp.is_active === 1 && (
+                              <button
+                                onClick={() => openDeleteConfirmation(emp)}
+                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200"
+                                title="إلغاء التفعيل / حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -566,6 +594,16 @@ export default function EmployeeManagementPage() {
         onClose={() => setBulkModalOpen(false)}
         activeTab={activeTab}
         onRefresh={fetchData}
+      />
+
+      {/* نافذة تعديل بيانات الموظف أو الموقع */}
+      <EditEmployeeModal
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, item: null, isLocation: false })}
+        item={editModal.item}
+        isLocation={editModal.isLocation}
+        role={activeTab}
+        onSuccess={fetchData}
       />
     </div>
   );

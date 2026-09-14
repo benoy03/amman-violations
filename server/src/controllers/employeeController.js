@@ -256,11 +256,77 @@ function bulkCreateEmployees(req, res, next) {
   }
 }
 
+/**
+ * تعديل بيانات موظف (الرقم أو الاسم)
+ */
+function updateEmployee(req, res, next) {
+  try {
+    const { role, number } = req.params;
+    const { newNumber, name } = req.body;
+
+    const meta = getRoleMeta(role);
+    if (!meta) {
+      return res.status(400).json({ success: false, message: 'الدور المحدد غير صالح' });
+    }
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'اسم الموظف مطلوب' });
+    }
+
+    const cleanOldNumber = String(number).trim();
+    const cleanNewNumber = String(newNumber || number).trim();
+    const cleanName = name.trim();
+
+    const existing = db.prepare(`SELECT * FROM ${meta.table} WHERE number = ?`).get(cleanOldNumber);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'الموظف غير موجود' });
+    }
+
+    if (cleanNewNumber !== cleanOldNumber) {
+      const duplicate = db.prepare(`SELECT id FROM ${meta.table} WHERE number = ? AND id != ?`).get(cleanNewNumber, existing.id);
+      if (duplicate) {
+        return res.status(400).json({ success: false, message: 'رقم الموظف الجديد مسجل مسبقاً لموظف آخر' });
+      }
+    }
+
+    db.prepare(`UPDATE ${meta.table} SET number = ?, name = ? WHERE id = ?`).run(cleanNewNumber, cleanName, existing.id);
+
+    // تحديث السجلات المرتبطة بهذا الموظف في جدول المخالفات لضمان تكامل البيانات
+    const nameCol = meta.column.replace('_id', '_name');
+    try {
+      db.prepare(`UPDATE violations SET ${meta.column} = ?, ${nameCol} = ? WHERE ${meta.column} = ?`).run(
+        cleanNewNumber,
+        cleanName,
+        cleanOldNumber
+      );
+    } catch (vErr) {
+      console.error('ملاحظة أثناء تحديث المخالفات المرتبطة بالموظف:', vErr.message);
+    }
+
+    const { logAction } = require('../utils/auditLogger');
+    logAction({
+      req,
+      action: 'تعديل موظف',
+      entity: meta.table,
+      entityId: cleanNewNumber,
+      details: `تعديل بيانات ${meta.label}: من (${cleanOldNumber} - ${existing.name}) إلى (${cleanNewNumber} - ${cleanName})`
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث بيانات الموظف بنجاح'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getEmployees,
   getAllEmployeesWithStats,
   createEmployee,
   checkEmployeeViolations,
   deleteEmployee,
-  bulkCreateEmployees
+  bulkCreateEmployees,
+  updateEmployee
 };

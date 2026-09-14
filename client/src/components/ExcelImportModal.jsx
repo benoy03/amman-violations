@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import api from '../api/axiosInstance';
+import { downloadSecureFile } from '../utils/fileDownloader';
+import { useToast } from '../context/ToastContext';
 import { FileSpreadsheet, UploadCloud, Download, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ExcelImportModal({ isOpen, onClose, onImportSuccess }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  const toast = useToast();
 
   if (!isOpen) return null;
 
@@ -18,8 +23,16 @@ export default function ExcelImportModal({ isOpen, onClose, onImportSuccess }) {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    window.open('/api/violations/template-excel', '_blank');
+  const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true);
+    try {
+      await downloadSecureFile('/violations/template-excel', 'Amman_Violations_Template.xlsx');
+      toast.success('تم تنزيل قالب الاستيراد بنجاح');
+    } catch (err) {
+      toast.error('فشل تنزيل القالب: ' + err.message);
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
   const handleUpload = async (e) => {
@@ -81,11 +94,12 @@ export default function ExcelImportModal({ isOpen, onClose, onImportSuccess }) {
           </div>
           <button
             type="button"
+            disabled={downloadingTemplate}
             onClick={handleDownloadTemplate}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-brand-700 border border-slate-300 rounded-xl text-xs font-bold transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-brand-700 border border-slate-300 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>تحميل القالب</span>
+            <span>{downloadingTemplate ? 'جاري التنزيل...' : 'تحميل القالب'}</span>
           </button>
         </div>
 

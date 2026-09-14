@@ -4,6 +4,9 @@ import PrintHeader from '../components/PrintHeader';
 import Pagination from '../components/Pagination';
 import JordanianPlate from '../components/JordanianPlate';
 import ExcelImportModal from '../components/ExcelImportModal';
+import ViolationDetailModal from '../components/ViolationDetailModal';
+import { downloadSecureFile } from '../utils/fileDownloader';
+import { useToast } from '../context/ToastContext';
 import { formatDisplayDate } from '../utils/dateHelpers';
 import {
   Printer,
@@ -13,15 +16,22 @@ import {
   UploadCloud,
   RotateCcw,
   MapPin,
-  Camera
+  Camera,
+  Eye,
+  Edit3
 } from 'lucide-react';
 
 export default function ViolationsListPage() {
   const [violations, setViolations] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1, limit: 15 });
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedViolation, setSelectedViolation] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const toast = useToast();
 
   // فلاتر البحث والفرز
   const [search, setSearch] = useState('');
@@ -93,8 +103,17 @@ export default function ViolationsListPage() {
     }
   };
 
-  const handleExportExcel = () => {
-    window.open('/api/violations/export-excel', '_blank');
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await downloadSecureFile('/violations/export-excel', `Amman_Violations_${today}.xlsx`);
+      toast.success('تم تصدير سجل المخالفات إلى Excel بنجاح');
+    } catch (err) {
+      toast.error('فشل تصدير ملف Excel: ' + err.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -115,7 +134,7 @@ export default function ViolationsListPage() {
             سجل المخالفات الكامل
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            استعراض كافة المخالفات المرحلة مع عرض شكل اللوحات الأردنية ومواقع الكاميرات
+            استعراض وتدقيق وتعديل كافة المخالفات مع مقارنة بصرية ذكية للوحات الأردنية
           </p>
         </div>
 
@@ -133,11 +152,12 @@ export default function ViolationsListPage() {
           {/* زر تصدير Excel */}
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition border border-emerald-200"
+            disabled={exporting}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition border border-emerald-200 disabled:opacity-50"
             title="تصدير جدول Excel منسق (.xlsx)"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>تصدير Excel (.xlsx)</span>
+            <span>{exporting ? 'جاري التصدير...' : 'تصدير Excel (.xlsx)'}</span>
           </button>
 
           {/* زر طباعة السجل */}
@@ -261,18 +281,19 @@ export default function ViolationsListPage() {
                 <th className="p-3.5">المعدل</th>
                 <th className="p-3.5">المبلغ</th>
                 <th className="p-3.5">اليوم والتاريخ</th>
+                <th className="p-3.5 text-center no-print">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-12 text-slate-400 font-bold">
+                  <td colSpan="13" className="text-center py-12 text-slate-400 font-bold">
                     جاري تحميل سجل المخالفات...
                   </td>
                 </tr>
               ) : violations.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-12 text-slate-400 font-bold">
+                  <td colSpan="13" className="text-center py-12 text-slate-400 font-bold">
                     لا توجد سجلات مخالفات مطابقة للبحث
                   </td>
                 </tr>
@@ -280,7 +301,11 @@ export default function ViolationsListPage() {
                 violations.map((item, index) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-brand-50/40 transition duration-150 odd:bg-white even:bg-slate-50/50"
+                    onClick={() => {
+                      setSelectedViolation(item);
+                      setIsDetailModalOpen(true);
+                    }}
+                    className="cursor-pointer hover:bg-brand-50/60 transition duration-150 odd:bg-white even:bg-slate-50/50"
                   >
                     <td className="p-3.5 text-center font-bold text-slate-500">
                       {(pagination.page - 1) * pagination.limit + index + 1}
@@ -323,6 +348,20 @@ export default function ViolationsListPage() {
                     <td className="p-3.5 whitespace-nowrap font-bold text-brand-800">
                       {item.entry_day} ({formatDisplayDate(item.entry_date)})
                     </td>
+                    <td className="p-3.5 whitespace-nowrap text-center no-print" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedViolation(item);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition shadow-sm"
+                        title="معاينة وتعديل وطباعة وصل"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>معاينة وتدقيق</span>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -345,6 +384,24 @@ export default function ViolationsListPage() {
         onImportSuccess={() => {
           fetchViolations(1);
           setIsImportModalOpen(false);
+        }}
+      />
+
+      {/* نافذة معاينة وتعديل وطباعة المخالفة الفردية */}
+      <ViolationDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedViolation(null);
+        }}
+        violation={selectedViolation}
+        onUpdateSuccess={(updated) => {
+          setViolations((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+          setSelectedViolation(updated);
+        }}
+        onDeleteSuccess={(deletedId) => {
+          setViolations((prev) => prev.filter((v) => v.id !== deletedId));
+          setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
         }}
       />
     </div>

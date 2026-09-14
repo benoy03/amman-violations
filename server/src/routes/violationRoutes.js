@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const violationController = require('../controllers/violationController');
-const { authenticateToken } = require('../middlewares/authMiddleware');
+const { authenticateToken, requireAdmin } = require('../middlewares/authMiddleware');
 
 // إعداد التخزين للصور وملفات Excel
 const storage = multer.diskStorage({
@@ -41,5 +41,11 @@ router.get('/by-role/:role', authenticateToken, violationController.getViolation
 
 // جلب تفاصيل مخالفة واحدة
 router.get('/:id', authenticateToken, violationController.getViolationById);
+
+// تحديث مخالفة
+router.put('/:id', authenticateToken, violationController.updateViolation);
+
+// حذف مخالفة (للمدير فقط)
+router.delete('/:id', authenticateToken, requireAdmin, violationController.deleteViolation);
 
 module.exports = router;

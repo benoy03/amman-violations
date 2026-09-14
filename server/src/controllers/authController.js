@@ -6,7 +6,7 @@ const { JWT_SECRET } = require('../middlewares/authMiddleware');
 /**
  * تسجيل الدخول
  */
-function login(req, res, next) {
+async function login(req, res, next) {
   try {
     const { username, password } = req.body;
 
@@ -26,7 +26,7 @@ function login(req, res, next) {
       });
     }
 
-    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -83,7 +83,57 @@ function getProfile(req, res, next) {
   }
 }
 
+/**
+ * تغيير كلمة المرور للمستخدم الحالي
+ */
+async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى إدخال كلمة المرور الحالية والجديدة'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور الجديدة يجب أن لا تقل عن 6 أحرف أو أرقام'
+      });
+    }
+
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'المستخدم غير موجود'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور الحالية غير صحيحة'
+      });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id);
+
+    res.json({
+      success: true,
+      message: 'تم تغيير كلمة المرور بنجاح'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   login,
-  getProfile
+  getProfile,
+  changePassword
 };

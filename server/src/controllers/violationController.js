@@ -588,12 +588,156 @@ function getViolationById(req, res, next) {
   }
 }
 
+/**
+ * تحديث وتعديل مخالفة مسجلة
+ */
+function updateViolation(req, res, next) {
+  try {
+    const { id } = req.params;
+    const existing = db.prepare('SELECT * FROM violations WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'المخالفة غير موجودة' });
+    }
+
+    const {
+      violation_number,
+      violation_date,
+      wrong_vehicle_number,
+      correct_vehicle_number,
+      error_type,
+      custom_error_type,
+      extractor_id,
+      extractor_name,
+      auditor_id,
+      auditor_name,
+      modifier_id,
+      modifier_name,
+      reporter_id,
+      reporter_name,
+      camera_location,
+      image_url,
+      entry_date,
+      entry_day,
+      notes
+    } = req.body;
+
+    const cleanNumber = (violation_number || existing.violation_number).trim();
+
+    // التحقق من تكرار رقم المخالفة مع مخالفة أخرى
+    if (cleanNumber !== existing.violation_number) {
+      const duplicate = db.prepare('SELECT id FROM violations WHERE violation_number = ? AND id != ?').get(cleanNumber, id);
+      if (duplicate) {
+        return res.status(400).json({ success: false, message: 'رقم المخالفة الجديد مسجل مسبقاً لمخالفة أخرى' });
+      }
+    }
+
+    const finalErrorType = (error_type === 'أخرى' && custom_error_type)
+      ? custom_error_type.trim()
+      : (error_type ? error_type.trim() : existing.error_type);
+
+    const updateStmt = db.prepare(`
+      UPDATE violations SET
+        violation_number = ?,
+        violation_date = ?,
+        wrong_vehicle_number = ?,
+        correct_vehicle_number = ?,
+        error_type = ?,
+        camera_location = ?,
+        image_url = ?,
+        extractor_id = ?,
+        extractor_name = ?,
+        auditor_id = ?,
+        auditor_name = ?,
+        modifier_id = ?,
+        modifier_name = ?,
+        reporter_id = ?,
+        reporter_name = ?,
+        entry_date = ?,
+        entry_day = ?,
+        notes = ?
+      WHERE id = ?
+    `);
+
+    updateStmt.run(
+      cleanNumber,
+      violation_date || existing.violation_date,
+      (wrong_vehicle_number || existing.wrong_vehicle_number).trim(),
+      (correct_vehicle_number || existing.correct_vehicle_number).trim(),
+      finalErrorType,
+      camera_location || existing.camera_location,
+      image_url !== undefined ? image_url : existing.image_url,
+      extractor_id || existing.extractor_id,
+      extractor_name || existing.extractor_name,
+      auditor_id || existing.auditor_id,
+      auditor_name || existing.auditor_name,
+      modifier_id || existing.modifier_id,
+      modifier_name || existing.modifier_name,
+      reporter_id || existing.reporter_id,
+      reporter_name || existing.reporter_name,
+      entry_date || existing.entry_date,
+      entry_day || existing.entry_day,
+      notes !== undefined ? notes : existing.notes,
+      id
+    );
+
+    const updated = db.prepare('SELECT * FROM violations WHERE id = ?').get(id);
+
+    logAction({
+      req,
+      action: 'تعديل مخالفة',
+      entity: 'violations',
+      entityId: cleanNumber,
+      details: `تم تعديل المخالفة رقم ${cleanNumber} (ID: ${id})`
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث بيانات المخالفة بنجاح',
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * حذف مخالفة (محمي للمدير فقط)
+ */
+function deleteViolation(req, res, next) {
+  try {
+    const { id } = req.params;
+    const existing = db.prepare('SELECT * FROM violations WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'المخالفة غير موجودة' });
+    }
+
+    db.prepare('DELETE FROM violations WHERE id = ?').run(id);
+
+    logAction({
+      req,
+      action: 'حذف مخالفة',
+      entity: 'violations',
+      entityId: existing.violation_number,
+      details: `تم حذف المخالفة رقم ${existing.violation_number} (ID: ${id})`
+    });
+
+    res.json({
+      success: true,
+      message: `تم حذف المخالفة رقم ${existing.violation_number} بنجاح`
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   checkViolationNumber,
   createViolation,
   getViolations,
   getViolationsByRole,
   getViolationById,
+  updateViolation,
+  deleteViolation,
   uploadImage,
   exportExcel,
   downloadTemplate,

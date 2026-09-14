@@ -10,12 +10,20 @@ export const ARABIC_DAYS = [
 
 /**
  * الحصول على اسم اليوم بالعربي من تاريخ YYYY-MM-DD
+ * ملاحظة: نتجنب new Date('YYYY-MM-DD') التي تُعامل التاريخ كـ UTC مما يسبب خطأ في اليوم بتوقيت عمّان (UTC+3)
  */
 export function getArabicDayName(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
-  return ARABIC_DAYS[date.getDay()] || '';
+  try {
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return '';
+    // إنشاء التاريخ بالتوقيت المحلي عبر إضافة T00:00:00 (بدون Z لتجنب UTC)
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (isNaN(date.getTime())) return '';
+    return ARABIC_DAYS[date.getDay()] || '';
+  } catch {
+    return '';
+  }
 }
 
 /**

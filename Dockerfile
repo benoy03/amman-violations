@@ -2,7 +2,7 @@
 # 🏛️ أمانة عمّان الكبرى — مديرية الرقابة الآلية والتحكم (قسم المخالفات)
 # 🐳 Dockerfile for Railway / Fly.io Production Deployment
 # ==============================================================================
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 
 # Build tools required for better-sqlite3 native compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \

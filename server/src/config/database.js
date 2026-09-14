@@ -138,6 +138,45 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_violations_location ON violations(camera_location);
     CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
   `);
+
+  // التأكد من وجود مستخدمين افتراضيين للنظام (للتشغيل المباشر على السيرفر)
+  try {
+    const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get();
+    if (!userCount || userCount.count === 0) {
+      const bcrypt = require('bcryptjs');
+      const adminHash = bcrypt.hashSync('admin123', 10);
+      const userHash = bcrypt.hashSync('user123', 10);
+      const insertUser = db.prepare("INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)");
+      insertUser.run('admin', adminHash, 'مدير قسم المخالفات - أمانة عمّان', 'admin');
+      insertUser.run('user', userHash, 'موظف الرقابة والتدقيق', 'user');
+      console.log('✅ تم إنشاء الحسابات الافتراضية بنجاح: admin / user');
+    }
+
+    const locCount = db.prepare("SELECT COUNT(*) as count FROM camera_locations").get();
+    if (!locCount || locCount.count === 0) {
+      const insertLoc = db.prepare("INSERT INTO camera_locations (name, zone) VALUES (?, ?)");
+      const defaultLocations = [
+        ['شارع الأردن - دوار الاستقلال', 'وسط عمّان'],
+        ['شارع المطار - جسر مادبا', 'جنوب عمّان'],
+        ['شارع الملك عبدالله الثاني - صويلح', 'شمال عمّان'],
+        ['شارع القدس - جسر ناعور', 'غرب عمّان'],
+        ['شارع الشهيد - تقاطع المدينة الرياضية', 'وسط عمّان']
+      ];
+      for (const [name, zone] of defaultLocations) {
+        insertLoc.run(name, zone);
+      }
+    }
+
+    const extCount = db.prepare("SELECT COUNT(*) as count FROM extractors").get();
+    if (!extCount || extCount.count === 0) {
+      db.prepare("INSERT INTO extractors (number, name) VALUES (?, ?)").run('101', 'أحمد محمود العبداللات');
+      db.prepare("INSERT INTO auditors (number, name) VALUES (?, ?)").run('201', 'عمر إبراهيم الحديد');
+      db.prepare("INSERT INTO modifiers (number, name) VALUES (?, ?)").run('301', 'سليمان فهد الدعجة');
+      db.prepare("INSERT INTO reporters (number, name) VALUES (?, ?)").run('401', 'بلال حسن الزعبي');
+    }
+  } catch (seedErr) {
+    console.error('ملاحظة أثناء التحقق من البيانات الافتراضية:', seedErr.message);
+  }
 }
 
 initializeDatabase();

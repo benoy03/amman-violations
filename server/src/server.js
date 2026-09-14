@@ -1,4 +1,11 @@
 require('dotenv').config();
+console.log('🚀 Starting Amman Violations Server...');
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
