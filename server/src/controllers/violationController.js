@@ -35,6 +35,7 @@ function createViolation(req, res, next) {
     const {
       violation_number,
       violation_date,
+      jurisdiction,
       wrong_vehicle_number,
       correct_vehicle_number,
       error_type,
@@ -48,7 +49,9 @@ function createViolation(req, res, next) {
       reporter_id,
       reporter_name,
       camera_location,
+      location_code,
       image_url,
+      video_url,
       entry_date,
       entry_day,
       notes
@@ -87,22 +90,25 @@ function createViolation(req, res, next) {
       });
     }
 
+    const finalJurisdiction = (jurisdiction === 'دوريات خارجية') ? 'دوريات خارجية' : 'سير';
+    const finalLocationCode = location_code ? location_code.trim().toUpperCase() : null;
     const finalEntryDate = entry_date ? entry_date.trim() : getTodayString();
     const finalEntryDay = entry_day ? entry_day.trim() : getArabicDayName(finalEntryDate);
     const finalLocation = camera_location ? camera_location.trim() : 'شارع الأردن - دوار الاستقلال';
 
     const insertStmt = db.prepare(`
       INSERT INTO violations (
-        violation_number, violation_date, wrong_vehicle_number, correct_vehicle_number,
+        violation_number, violation_date, jurisdiction, wrong_vehicle_number, correct_vehicle_number,
         error_type, extractor_id, extractor_name, auditor_id, auditor_name,
         modifier_id, modifier_name, reporter_id, reporter_name,
-        camera_location, image_url, entry_date, entry_day, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        camera_location, location_code, image_url, video_url, entry_date, entry_day, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = insertStmt.run(
       cleanNumber,
       violation_date.trim(),
+      finalJurisdiction,
       wrong_vehicle_number.trim(),
       correct_vehicle_number.trim(),
       finalErrorType,
@@ -115,7 +121,9 @@ function createViolation(req, res, next) {
       reporter_id.trim(),
       reporter_name ? reporter_name.trim() : '',
       finalLocation,
+      finalLocationCode,
       image_url || null,
+      video_url || null,
       finalEntryDate,
       finalEntryDay,
       notes ? notes.trim() : ''
@@ -149,6 +157,7 @@ function getViolations(req, res, next) {
   try {
     const {
       search,
+      jurisdiction,
       startDate,
       endDate,
       errorType,
@@ -173,6 +182,8 @@ function getViolations(req, res, next) {
         violation_number LIKE ? OR
         wrong_vehicle_number LIKE ? OR
         correct_vehicle_number LIKE ? OR
+        location_code LIKE ? OR
+        jurisdiction LIKE ? OR
         extractor_name LIKE ? OR
         auditor_name LIKE ? OR
         modifier_name LIKE ? OR
@@ -181,7 +192,12 @@ function getViolations(req, res, next) {
         error_type LIKE ? OR
         notes LIKE ?
       )`);
-      for (let i = 0; i < 10; i++) params.push(term);
+      for (let i = 0; i < 12; i++) params.push(term);
+    }
+
+    if (jurisdiction && jurisdiction !== 'الكل' && jurisdiction !== 'all') {
+      conditions.push('jurisdiction = ?');
+      params.push(jurisdiction);
     }
 
     if (startDate) {
@@ -393,6 +409,27 @@ function uploadImage(req, res, next) {
 }
 
 /**
+ * رفع فيديو الكاميرا للمخالفة (اختياري)
+ */
+function uploadVideo(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'لم يتم استلام أي مقطع فيديو' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      success: true,
+      message: 'تم رفع مقطع فيديو المخالفة بنجاح',
+      videoUrl: fileUrl,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * تصدير ملف Excel (.xlsx) حقيقي منسق
  */
 function exportExcel(req, res, next) {
@@ -400,10 +437,12 @@ function exportExcel(req, res, next) {
     const rows = db.prepare(`
       SELECT 
         violation_number as "رقم المخالفة",
+        jurisdiction as "اختصاص المخالفة",
         violation_date as "تاريخ المخالفة",
         wrong_vehicle_number as "المركبة الخطأ",
         correct_vehicle_number as "المركبة الصحيح",
         error_type as "طبيعة الخطأ",
+        location_code as "رمز الموقع",
         camera_location as "موقع الكاميرا",
         extractor_id || ' - ' || extractor_name as "المستخرج",
         auditor_id || ' - ' || auditor_name as "المدقق",
@@ -438,10 +477,12 @@ function downloadTemplate(req, res, next) {
     const templateRows = [
       {
         'رقم المخالفة': 'GAM-2026-9001',
+        'اختصاص المخالفة': 'سير',
         'تاريخ المخالفة': '2026-09-06',
         'المركبة الخطأ': '50-12345',
         'المركبة الصحيح': '50-12348',
         'طبيعة الخطأ': 'خطأ في قراءة اللوحة',
+        'رمز الموقع': 'CAM-01',
         'موقع الكاميرا': 'شارع الأردن - دوار الاستقلال',
         'رقم المستخرج': '101',
         'اسم المستخرج': 'عمر العبداللات',
@@ -494,11 +535,11 @@ function importExcel(req, res, next) {
 
     const insertStmt = db.prepare(`
       INSERT INTO violations (
-        violation_number, violation_date, wrong_vehicle_number, correct_vehicle_number,
+        violation_number, violation_date, jurisdiction, wrong_vehicle_number, correct_vehicle_number,
         error_type, extractor_id, extractor_name, auditor_id, auditor_name,
         modifier_id, modifier_name, reporter_id, reporter_name,
-        camera_location, entry_date, entry_day, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        camera_location, location_code, entry_date, entry_day, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const checkStmt = db.prepare('SELECT id FROM violations WHERE violation_number = ?');
@@ -519,9 +560,12 @@ function importExcel(req, res, next) {
         }
 
         const vDate = (row['تاريخ المخالفة'] || row['violation_date'] || getTodayString()).toString().trim();
+        const jurRaw = (row['اختصاص المخالفة'] || row['jurisdiction'] || 'سير').toString().trim();
+        const jur = jurRaw === 'دوريات خارجية' ? 'دوريات خارجية' : 'سير';
         const wrong = (row['المركبة الخطأ'] || row['wrong_vehicle_number'] || '').toString().trim();
         const correct = (row['المركبة الصحيح'] || row['correct_vehicle_number'] || '').toString().trim();
         const errType = (row['طبيعة الخطأ'] || row['error_type'] || 'خطأ في قراءة اللوحة').toString().trim();
+        const locCode = (row['رمز الموقع'] || row['location_code'] || '').toString().trim().toUpperCase() || null;
         const location = (row['موقع الكاميرا'] || row['camera_location'] || 'شارع الأردن - دوار الاستقلال').toString().trim();
 
         const extId = (row['رقم المستخرج'] || row['extractor_id'] || '101').toString().trim();
@@ -538,9 +582,9 @@ function importExcel(req, res, next) {
         const notes = (row['ملاحظات'] || row['notes'] || '').toString().trim();
 
         insertStmt.run(
-          num, vDate, wrong, correct, errType,
+          num, vDate, jur, wrong, correct, errType,
           extId, extName, audId, audName, modId, modName, repId, repName,
-          location, eDate, eDay, notes
+          location, locCode, eDate, eDay, notes
         );
         imported++;
       }
@@ -602,6 +646,7 @@ function updateViolation(req, res, next) {
     const {
       violation_number,
       violation_date,
+      jurisdiction,
       wrong_vehicle_number,
       correct_vehicle_number,
       error_type,
@@ -615,7 +660,9 @@ function updateViolation(req, res, next) {
       reporter_id,
       reporter_name,
       camera_location,
+      location_code,
       image_url,
+      video_url,
       entry_date,
       entry_day,
       notes
@@ -631,6 +678,9 @@ function updateViolation(req, res, next) {
       }
     }
 
+    const finalJurisdiction = jurisdiction ? (jurisdiction === 'دوريات خارجية' ? 'دوريات خارجية' : 'سير') : existing.jurisdiction;
+    const finalLocationCode = location_code !== undefined ? (location_code ? location_code.trim().toUpperCase() : null) : existing.location_code;
+
     const finalErrorType = (error_type === 'أخرى' && custom_error_type)
       ? custom_error_type.trim()
       : (error_type ? error_type.trim() : existing.error_type);
@@ -639,11 +689,14 @@ function updateViolation(req, res, next) {
       UPDATE violations SET
         violation_number = ?,
         violation_date = ?,
+        jurisdiction = ?,
         wrong_vehicle_number = ?,
         correct_vehicle_number = ?,
         error_type = ?,
         camera_location = ?,
+        location_code = ?,
         image_url = ?,
+        video_url = ?,
         extractor_id = ?,
         extractor_name = ?,
         auditor_id = ?,
@@ -661,11 +714,14 @@ function updateViolation(req, res, next) {
     updateStmt.run(
       cleanNumber,
       violation_date || existing.violation_date,
+      finalJurisdiction,
       (wrong_vehicle_number || existing.wrong_vehicle_number).trim(),
       (correct_vehicle_number || existing.correct_vehicle_number).trim(),
       finalErrorType,
       camera_location || existing.camera_location,
+      finalLocationCode,
       image_url !== undefined ? image_url : existing.image_url,
+      video_url !== undefined ? video_url : existing.video_url,
       extractor_id || existing.extractor_id,
       extractor_name || existing.extractor_name,
       auditor_id || existing.auditor_id,
@@ -739,6 +795,7 @@ module.exports = {
   updateViolation,
   deleteViolation,
   uploadImage,
+  uploadVideo,
   exportExcel,
   downloadTemplate,
   importExcel

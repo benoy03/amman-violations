@@ -2,13 +2,18 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const violationController = require('../controllers/violationController');
 const { authenticateToken, requireAdmin } = require('../middlewares/authMiddleware');
 
-// إعداد التخزين للصور وملفات Excel
+// إعداد التخزين للصور وملفات الفيديو وملفات Excel
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../../uploads'));
+    const uploadDir = process.env.UPLOADS_DIR || path.join(__dirname, '../../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -17,7 +22,10 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB للفيديو والصور
+});
 
 // فحص رقم المخالفة
 router.get('/check-number/:num', authenticateToken, violationController.checkViolationNumber);
@@ -27,8 +35,9 @@ router.get('/export-excel', authenticateToken, violationController.exportExcel);
 router.get('/template-excel', authenticateToken, violationController.downloadTemplate);
 router.post('/import-excel', authenticateToken, upload.single('file'), violationController.importExcel);
 
-// رفع صورة المخالفة
+// رفع صورة أو فيديو المخالفة
 router.post('/upload-image', authenticateToken, upload.single('image'), violationController.uploadImage);
+router.post('/upload-video', authenticateToken, upload.single('video'), violationController.uploadVideo);
 
 // ترحيل وحفظ مخالفة جديدة
 router.post('/', authenticateToken, violationController.createViolation);

@@ -13,6 +13,7 @@ export default function EditEmployeeModal({
 }) {
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
+  const [code, setCode] = useState('');
   const [zone, setZone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -23,6 +24,7 @@ export default function EditEmployeeModal({
     if (item) {
       setName(item.name || '');
       setNumber(item.number || '');
+      setCode(item.code || '');
       setZone(item.zone || '');
       setError('');
     }
@@ -39,6 +41,7 @@ export default function EditEmployeeModal({
       if (isLocation) {
         await api.put(`/locations/${item.id}`, {
           name: name.trim(),
+          code: code.trim().toUpperCase() || null,
           zone: zone.trim() || 'عمّان'
         });
         toast.success('تم تحديث موقع الكاميرا بنجاح');
@@ -122,6 +125,19 @@ export default function EditEmployeeModal({
             </>
           ) : (
             <>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  رمز الموقع (الكود الفريد)
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  placeholder="مثال: CAM-01"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase focus:bg-white focus:border-brand-500 outline-none"
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   اسم موقع الكاميرا

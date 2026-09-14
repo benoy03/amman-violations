@@ -22,6 +22,8 @@ import {
   User,
   Building2,
   Camera,
+  Video,
+  Play,
   MapPin,
   Upload,
   Image as ImageIcon,
@@ -50,12 +52,15 @@ export default function EntryPage() {
   const initialFormState = {
     violation_number: '',
     violation_date: today,
+    jurisdiction: 'سير',
     wrong_vehicle_number: '',
     correct_vehicle_number: '',
     error_type: '',
     custom_error_type: '',
     camera_location: 'شارع الأردن - دوار الاستقلال',
+    location_code: 'CAM-01',
     image_url: '',
+    video_url: '',
     extractor_id: '',
     extractor_name: '',
     auditor_id: '',
@@ -84,7 +89,9 @@ export default function EntryPage() {
   const [numberStatus, setNumberStatus] = useState({ checking: false, exists: false, message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [previewZoom, setPreviewZoom] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   const violationInputRef = useRef(null);
@@ -120,7 +127,18 @@ export default function EntryPage() {
         setAuditors(audRes.data.data || []);
         setModifiers(modRes.data.data || []);
         setReporters(repRes.data.data || []);
-        setLocations(locRes.data.data || []);
+        const locs = locRes.data.data || [];
+        setLocations(locs);
+        if (locs.length > 0) {
+          setFormData((prev) => {
+            const matched = locs.find((l) => l.name === prev.camera_location) || locs[0];
+            return {
+              ...prev,
+              camera_location: prev.camera_location || matched.name,
+              location_code: prev.location_code || matched.code || 'CAM-01'
+            };
+          });
+        }
       } catch (err) {
         console.error('فشل جلب القوائم:', err);
       }
@@ -169,6 +187,15 @@ export default function EntryPage() {
     }));
   };
 
+  const handleLocationChange = (locName) => {
+    const found = locations.find((l) => l.name === locName);
+    setFormData((prev) => ({
+      ...prev,
+      camera_location: locName,
+      location_code: (found && found.code) ? found.code : (prev.location_code || '')
+    }));
+  };
+
   const handleEmployeeChange = (role, id, list) => {
     const emp = list.find((item) => String(item.number) === String(id));
     const name = emp ? emp.name : '';
@@ -202,6 +229,30 @@ export default function EntryPage() {
     }
   };
 
+  // رفع مقطع فيديو الكاميرا (اختياري)
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    const data = new FormData();
+    data.append('video', file);
+
+    try {
+      const res = await api.post('/violations/upload-video', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData((prev) => ({ ...prev, video_url: res.data.videoUrl }));
+      setAlert({ show: true, type: 'success', message: 'تم إرفاق فيديو المخالفة بنجاح' });
+      toast.success('تم رفع مقطع الفيديو بنجاح');
+    } catch {
+      setAlert({ show: true, type: 'error', message: 'فشل رفع مقطع الفيديو' });
+      toast.error('فشل رفع مقطع الفيديو');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAlert({ show: false, type: '', message: '' });
@@ -228,6 +279,7 @@ export default function EntryPage() {
           wrong_vehicle_number: '',
           correct_vehicle_number: '',
           image_url: '',
+          video_url: '',
           notes: '',
           entry_date: today,
           entry_day: getArabicDayName(today)
@@ -338,6 +390,40 @@ export default function EntryPage() {
             <span>بيانات المخالفة والمركبة والكاميرا</span>
           </div>
 
+          {/* اختيار الاختصاص: سير أو دوريات خارجية */}
+          <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-black text-slate-800 block">اختصاص المخالفة <span className="text-red-500">*</span></span>
+              <span className="text-[11px] text-slate-500 font-medium">حدد اختصاص المخالفة إن كانت تابعة لسير العاصمة أو الدوريات الخارجية</span>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-200/80 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, jurisdiction: 'سير' })}
+                className={`px-5 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+                  formData.jurisdiction === 'سير'
+                    ? 'bg-brand-600 text-white shadow'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>🚦</span>
+                <span>سير العاصمة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, jurisdiction: 'دوريات خارجية' })}
+                className={`px-5 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+                  formData.jurisdiction === 'دوريات خارجية'
+                    ? 'bg-amber-600 text-white shadow'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>🚓</span>
+                <span>دوريات خارجية</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. رقم المخالفة */}
             <div className="lg:col-span-2">
@@ -393,13 +479,13 @@ export default function EntryPage() {
               {locations.length > 0 ? (
                 <select
                   value={formData.camera_location}
-                  onChange={(e) => setFormData({ ...formData, camera_location: e.target.value })}
+                  onChange={(e) => handleLocationChange(e.target.value)}
                   className="w-full px-3 py-3 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:ring-2 focus:ring-brand-500 outline-none"
                 >
                   <option value="">-- اختر موقع الكاميرا --</option>
                   {locations.map((loc) => (
                     <option key={loc.id} value={loc.name}>
-                      {loc.name} ({loc.zone})
+                      {loc.name} {loc.code ? `[${loc.code}]` : ''} ({loc.zone})
                     </option>
                   ))}
                 </select>
@@ -408,10 +494,25 @@ export default function EntryPage() {
                   type="text"
                   placeholder="أدخل موقع الكاميرا أو الشارع..."
                   value={formData.camera_location}
-                  onChange={(e) => setFormData({ ...formData, camera_location: e.target.value })}
+                  onChange={(e) => handleLocationChange(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:ring-2 focus:ring-brand-500"
                 />
               )}
+            </div>
+
+            {/* رمز موقع الكاميرا */}
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                <Camera className="w-3.5 h-3.5 text-brand-600" />
+                <span>رمز الموقع (الكود)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="مثال: CAM-01"
+                value={formData.location_code || ''}
+                onChange={(e) => setFormData({ ...formData, location_code: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-3 rounded-xl border border-slate-300 text-xs font-mono font-bold uppercase text-slate-800 outline-none focus:ring-2 focus:ring-brand-500"
+              />
             </div>
 
             {/* 3. رقم المركبة الخطأ */}
@@ -445,7 +546,7 @@ export default function EntryPage() {
             </div>
 
             {/* 5. طبيعة الخطأ */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-2">
               <label className="block text-xs font-bold text-slate-800 mb-1.5">
                 5. طبيعة الخطأ <span className="text-red-500">*</span>
               </label>
@@ -500,6 +601,31 @@ export default function EntryPage() {
                     title="معاينة الصورة"
                   >
                     <Eye className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* إرفاق فيديو الكاميرا */}
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                <Video className="w-3.5 h-3.5 text-brand-600" />
+                <span>فيديو المخالفة (اختياري)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <label className="flex-1 px-3 py-2.5 border border-dashed border-slate-300 hover:border-brand-500 rounded-xl text-center cursor-pointer bg-slate-50 hover:bg-brand-50/30 text-xs font-bold text-slate-700 transition flex items-center justify-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-brand-600" />
+                  <span>{uploadingVideo ? 'جاري الرفع...' : formData.video_url ? 'تغيير الفيديو' : 'إرفاق فيديو'}</span>
+                  <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={handleVideoUpload} className="hidden" />
+                </label>
+                {formData.video_url && (
+                  <button
+                    type="button"
+                    onClick={() => setVideoModalOpen(true)}
+                    className="p-2.5 bg-brand-50 text-brand-700 border border-brand-200 rounded-xl hover:bg-brand-100"
+                    title="تشغيل مقطع الفيديو"
+                  >
+                    <Play className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -793,6 +919,27 @@ export default function EntryPage() {
             </h4>
             <div className="rounded-2xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
               <img src={formData.image_url} alt="Camera Violation" className="max-h-full object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تشغيل فيديو المخالفة */}
+      {videoModalOpen && formData.video_url && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative max-w-3xl w-full bg-slate-900 rounded-3xl p-4 border border-slate-700">
+            <button
+              onClick={() => setVideoModalOpen(false)}
+              className="absolute left-4 top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h4 className="text-sm font-bold text-white mb-3 text-right flex items-center gap-2">
+              <Video className="w-4 h-4 text-amber-400" />
+              <span>معاينة فيديو كاميرا المخالفة (أمانة عمّان)</span>
+            </h4>
+            <div className="rounded-2xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
+              <video src={formData.video_url} controls autoPlay className="max-h-full max-w-full rounded-xl" />
             </div>
           </div>
         </div>

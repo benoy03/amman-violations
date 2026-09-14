@@ -4,7 +4,7 @@ const { logAction } = require('../utils/auditLogger');
 function getLocations(req, res, next) {
   try {
     const locations = db.prepare(`
-      SELECT id, name, zone, is_active, created_at
+      SELECT id, code, name, zone, is_active, created_at
       FROM camera_locations
       WHERE is_active = 1
       ORDER BY zone ASC, name ASC
@@ -21,11 +21,12 @@ function getLocations(req, res, next) {
 
 function createLocation(req, res, next) {
   try {
-    const { name, zone } = req.body;
+    const { code, name, zone } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'اسم موقع الكاميرا مطلوب' });
     }
 
+    const cleanCode = code ? code.trim().toUpperCase() : null;
     const cleanName = name.trim();
     const cleanZone = zone ? zone.trim() : 'عمان';
 
@@ -34,20 +35,20 @@ function createLocation(req, res, next) {
       return res.status(400).json({ success: false, message: 'موقع الكاميرا هذا مضاف مسبقاً' });
     }
 
-    const info = db.prepare('INSERT INTO camera_locations (name, zone) VALUES (?, ?)').run(cleanName, cleanZone);
+    const info = db.prepare('INSERT INTO camera_locations (code, name, zone) VALUES (?, ?, ?)').run(cleanCode, cleanName, cleanZone);
 
     logAction({
       req,
       action: 'إضافة موقع كاميرا',
       entity: 'camera_locations',
       entityId: info.lastInsertRowid,
-      details: `إضافة موقع: ${cleanName} (${cleanZone})`
+      details: `إضافة موقع: ${cleanName} (${cleanZone}) [رمز: ${cleanCode || 'غير محدد'}]`
     });
 
     res.status(201).json({
       success: true,
       message: 'تمت إضافة موقع الكاميرا بنجاح',
-      data: { id: info.lastInsertRowid, name: cleanName, zone: cleanZone }
+      data: { id: info.lastInsertRowid, code: cleanCode, name: cleanName, zone: cleanZone }
     });
   } catch (error) {
     next(error);
@@ -87,8 +88,8 @@ function bulkCreateLocations(req, res, next) {
     }
 
     const checkStmt = db.prepare('SELECT id FROM camera_locations WHERE name = ?');
-    const insertStmt = db.prepare('INSERT INTO camera_locations (name, zone, is_active) VALUES (?, ?, 1)');
-    const updateStmt = db.prepare('UPDATE camera_locations SET zone = ?, is_active = 1 WHERE name = ?');
+    const insertStmt = db.prepare('INSERT INTO camera_locations (code, name, zone, is_active) VALUES (?, ?, ?, 1)');
+    const updateStmt = db.prepare('UPDATE camera_locations SET code = ?, zone = ?, is_active = 1 WHERE name = ?');
 
     let insertedCount = 0;
     let updatedCount = 0;
@@ -96,15 +97,16 @@ function bulkCreateLocations(req, res, next) {
     const runBulk = db.transaction((list) => {
       for (const item of list) {
         const name = String(item.name || '').trim();
+        const code = item.code ? String(item.code).trim().toUpperCase() : null;
         const zone = item.zone ? String(item.zone).trim() : 'عمّان';
         if (!name) continue;
 
         const existing = checkStmt.get(name);
         if (existing) {
-          updateStmt.run(zone, name);
+          updateStmt.run(code, zone, name);
           updatedCount++;
         } else {
-          insertStmt.run(name, zone);
+          insertStmt.run(code, name, zone);
           insertedCount++;
         }
       }
@@ -137,12 +139,13 @@ function bulkCreateLocations(req, res, next) {
 function updateLocation(req, res, next) {
   try {
     const { id } = req.params;
-    const { name, zone } = req.body;
+    const { code, name, zone } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'اسم موقع الكاميرا مطلوب' });
     }
 
+    const cleanCode = code ? code.trim().toUpperCase() : null;
     const cleanName = name.trim();
     const cleanZone = zone ? zone.trim() : 'عمّان';
 
@@ -158,15 +161,16 @@ function updateLocation(req, res, next) {
       }
     }
 
-    db.prepare('UPDATE camera_locations SET name = ?, zone = ? WHERE id = ?').run(cleanName, cleanZone, id);
+    db.prepare('UPDATE camera_locations SET code = ?, name = ?, zone = ? WHERE id = ?').run(cleanCode, cleanName, cleanZone, id);
 
-    // تحديث المخالفات المسجلة بهذا الموقع إن تغير الاسم
-    if (cleanName !== existing.name) {
-      try {
-        db.prepare('UPDATE violations SET camera_location = ? WHERE camera_location = ?').run(cleanName, existing.name);
-      } catch (err) {
-        console.error('ملاحظة أثناء تحديث المخالفات بموقع الكاميرا الجديد:', err.message);
+    // تحديث المخالفات المسجلة بهذا الموقع إن تغير الاسم أو الرمز
+    try {
+      if (cleanName !== existing.name || cleanCode !== existing.code) {
+        db.prepare('UPDATE violations SET camera_location = ?, location_code = ? WHERE camera_location = ?')
+          .run(cleanName, cleanCode, existing.name);
       }
+    } catch (err) {
+      console.error('ملاحظة أثناء تحديث المخالفات بموقع الكاميرا الجديد:', err.message);
     }
 
     logAction({
@@ -174,7 +178,7 @@ function updateLocation(req, res, next) {
       action: 'تعديل موقع كاميرا',
       entity: 'camera_locations',
       entityId: id,
-      details: `تعديل موقع: من (${existing.name} - ${existing.zone}) إلى (${cleanName} - ${cleanZone})`
+      details: `تعديل موقع: من (${existing.name} [${existing.code || '-'}]) إلى (${cleanName} [${cleanCode || '-'}])`
     });
 
     res.json({

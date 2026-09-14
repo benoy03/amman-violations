@@ -35,6 +35,7 @@ export default function ViolationsListPage() {
 
   // فلاتر البحث والفرز
   const [search, setSearch] = useState('');
+  const [jurisdiction, setJurisdiction] = useState('الكل');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [errorType, setErrorType] = useState('');
@@ -48,6 +49,7 @@ export default function ViolationsListPage() {
       const res = await api.get('/violations', {
         params: {
           search,
+          jurisdiction: jurisdiction !== 'الكل' ? jurisdiction : undefined,
           startDate,
           endDate,
           errorType,
@@ -76,7 +78,7 @@ export default function ViolationsListPage() {
     }
     fetchLocations();
     fetchViolations(1);
-  }, [sortBy, sortOrder, errorType, location]);
+  }, [sortBy, sortOrder, errorType, location, jurisdiction]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -85,6 +87,7 @@ export default function ViolationsListPage() {
 
   const handleResetFilters = () => {
     setSearch('');
+    setJurisdiction('الكل');
     setStartDate('');
     setEndDate('');
     setErrorType('');
@@ -173,13 +176,38 @@ export default function ViolationsListPage() {
 
       {/* شريط الفلاتر والبحث */}
       <div className="no-print bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+        {/* أزرار الفرز السريع للاختصاص */}
+        <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 flex-wrap">
+          <span className="text-xs font-black text-slate-700">اختصاص المخالفة:</span>
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+            {['الكل', 'سير', 'دوريات خارجية'].map((jur) => (
+              <button
+                key={jur}
+                type="button"
+                onClick={() => setJurisdiction(jur)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition ${
+                  jurisdiction === jur
+                    ? jur === 'سير'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : jur === 'دوريات خارجية'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-slate-800 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {jur === 'سير' ? '🚦 سير العاصمة' : jur === 'دوريات خارجية' ? '🚓 دوريات خارجية' : 'جميع الاختصاصات'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSearchSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             {/* البحث السريع */}
             <div className="lg:col-span-2 relative">
               <input
                 type="text"
-                placeholder="بحث برقم المخالفة، رقم اللوحة، اسم الموظف..."
+                placeholder="بحث برقم المخالفة، رقم اللوحة، اسم الموظف، رمز الكاميرا..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full px-4 py-2.5 pl-10 rounded-xl border border-slate-300 text-xs font-medium outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
@@ -197,7 +225,7 @@ export default function ViolationsListPage() {
                 <option value="">-- كل الكاميرات والمواقع --</option>
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.name}>
-                    {loc.name}
+                    {loc.name} {loc.code ? `[${loc.code}]` : ''}
                   </option>
                 ))}
               </select>
@@ -263,6 +291,7 @@ export default function ViolationsListPage() {
                     <ArrowUpDown className="w-3 h-3 text-slate-400 no-print" />
                   </div>
                 </th>
+                <th className="p-3.5">الاختصاص</th>
                 <th
                   onClick={() => handleSort('violation_date')}
                   className="p-3.5 cursor-pointer hover:bg-slate-200 transition"
@@ -287,13 +316,13 @@ export default function ViolationsListPage() {
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan="13" className="text-center py-12 text-slate-400 font-bold">
+                  <td colSpan="14" className="text-center py-12 text-slate-400 font-bold">
                     جاري تحميل سجل المخالفات...
                   </td>
                 </tr>
               ) : violations.length === 0 ? (
                 <tr>
-                  <td colSpan="13" className="text-center py-12 text-slate-400 font-bold">
+                  <td colSpan="14" className="text-center py-12 text-slate-400 font-bold">
                     لا توجد سجلات مخالفات مطابقة للبحث
                   </td>
                 </tr>
@@ -313,6 +342,18 @@ export default function ViolationsListPage() {
                     <td className="p-3.5 font-black text-brand-900 whitespace-nowrap">
                       {item.violation_number}
                     </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                          item.jurisdiction === 'دوريات خارجية'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        }`}
+                      >
+                        <span>{item.jurisdiction === 'دوريات خارجية' ? '🚓' : '🚦'}</span>
+                        <span>{item.jurisdiction === 'دوريات خارجية' ? 'دوريات خارجية' : 'سير العاصمة'}</span>
+                      </span>
+                    </td>
                     <td className="p-3.5 font-semibold text-slate-600 whitespace-nowrap">
                       {formatDisplayDate(item.violation_date)}
                     </td>
@@ -328,9 +369,19 @@ export default function ViolationsListPage() {
                       </span>
                     </td>
                     <td className="p-3.5 whitespace-nowrap font-medium text-slate-700">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <MapPin className="w-3 h-3 text-brand-600" />
                         <span>{item.camera_location || 'شارع الأردن'}</span>
+                        {item.location_code && (
+                          <span className="font-mono text-[10px] font-black px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                            {item.location_code}
+                          </span>
+                        )}
+                        {item.video_url && (
+                          <span title="يوجد مقطع فيديو للكاميرا" className="text-amber-500 font-bold text-xs">
+                            📹
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="p-3.5 whitespace-nowrap font-medium">

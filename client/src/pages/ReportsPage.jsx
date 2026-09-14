@@ -40,6 +40,7 @@ const PERIODS = [
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState('month');
+  const [jurisdiction, setJurisdiction] = useState('الكل');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [stats, setStats] = useState(null);
@@ -51,6 +52,7 @@ export default function ReportsPage() {
       const res = await api.get('/reports/statistics', {
         params: {
           period,
+          jurisdiction: jurisdiction !== 'الكل' ? jurisdiction : undefined,
           startDate: period === 'custom' ? customStart : undefined,
           endDate: period === 'custom' ? customEnd : undefined
         }
@@ -67,7 +69,7 @@ export default function ReportsPage() {
     if (period !== 'custom') {
       fetchStats();
     }
-  }, [period]);
+  }, [period, jurisdiction]);
 
   const handleCustomSubmit = (e) => {
     e.preventDefault();
@@ -84,7 +86,7 @@ export default function ReportsPage() {
       {/* ترويسة الطباعة الرسمية */}
       <PrintHeader
         title="تقرير وإحصائيات تعديل مخالفات الكاميرات الرقابية"
-        subtitle={`أمانة عمّان الكبرى — الفترة: ${stats?.dateRange?.label || period} (${stats?.dateRange?.startDate} إلى ${stats?.dateRange?.endDate})`}
+        subtitle={`أمانة عمّان الكبرى — الفترة: ${stats?.dateRange?.label || period} (${stats?.dateRange?.startDate} إلى ${stats?.dateRange?.endDate}) — الاختصاص: ${jurisdiction === 'الكل' ? 'جميع الاختصاصات' : jurisdiction}`}
       />
 
       {/* الرأس وعناصر التحكم في الشاشة */}
@@ -144,6 +146,37 @@ export default function ReportsPage() {
               {p.label}
             </button>
           ))}
+        </div>
+
+        {/* تصفية حسب الاختصاص */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-slate-100">
+          <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <span>اختصاص المخالفة:</span>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'الكل', label: 'جميع الاختصاصات' },
+              { id: 'سير', label: '🚦 اختصاص سير' },
+              { id: 'دوريات خارجية', label: '🚓 دوريات خارجية' }
+            ].map((j) => (
+              <button
+                key={j.id}
+                type="button"
+                onClick={() => setJurisdiction(j.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  jurisdiction === j.id
+                    ? j.id === 'دوريات خارجية'
+                      ? 'bg-purple-700 text-white shadow-md shadow-purple-700/20'
+                      : j.id === 'سير'
+                      ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
+                      : 'bg-slate-800 text-white shadow-md shadow-slate-800/20'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {j.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {period === 'custom' && (
@@ -218,6 +251,74 @@ export default function ReportsPage() {
               color="teal"
             />
           </div>
+
+          {/* بطاقة مقارنة الاختصاص: سير مقابل دوريات خارجية */}
+          {stats.jurisdictionStats && stats.jurisdictionStats.length > 0 && (
+            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-purple-950 text-white rounded-3xl p-6 shadow-md border border-slate-700 printable-area">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-base font-black flex items-center gap-2">
+                    <span>⚖️ مقارنة اختصاص المخالفات في الفترة</span>
+                    <span className="text-xs font-normal text-blue-300">({stats.dateRange?.label})</span>
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    توزيع المخالفات المسجلة بين اختصاص السير واختصاص الدوريات الخارجية
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-3 py-1 bg-white/10 rounded-full font-bold text-slate-200">
+                    إجمالي الفترة: {stats.summary.totalViolationsInPeriod} مخالفة
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(() => {
+                  const traffic = stats.jurisdictionStats.find((j) => j.jurisdiction === 'سير') || { count: 0, percentage: 0 };
+                  const patrol = stats.jurisdictionStats.find((j) => j.jurisdiction === 'دوريات خارجية') || { count: 0, percentage: 0 };
+                  return (
+                    <>
+                      <div className="bg-blue-900/40 border border-blue-500/30 backdrop-blur rounded-2xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">🚦</span>
+                          <div>
+                            <div className="text-xs font-bold text-blue-300">اختصاص سير</div>
+                            <div className="text-2xl font-black text-white">
+                              {traffic.count} <span className="text-xs font-normal text-blue-300">مخالفة</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-amber-300">{traffic.percentage}%</div>
+                          <div className="w-24 bg-white/20 rounded-full h-2 mt-1 overflow-hidden">
+                            <div className="bg-amber-400 h-full rounded-full transition-all" style={{ width: `${traffic.percentage}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-900/40 border border-purple-500/30 backdrop-blur rounded-2xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">🚓</span>
+                          <div>
+                            <div className="text-xs font-bold text-purple-300">اختصاص دوريات خارجية</div>
+                            <div className="text-2xl font-black text-white">
+                              {patrol.count} <span className="text-xs font-normal text-purple-300">مخالفة</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-emerald-300">{patrol.percentage}%</div>
+                          <div className="w-24 bg-white/20 rounded-full h-2 mt-1 overflow-hidden">
+                            <div className="bg-emerald-400 h-full rounded-full transition-all" style={{ width: `${patrol.percentage}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* قسم الرسوم البيانية المتطورة (Bar Chart + Donut Chart) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -320,6 +421,7 @@ export default function ReportsPage() {
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                     <th className="p-3">موقع الكاميرا (الشارع / التقاطع)</th>
+                    <th className="p-3 text-center">رمز الموقع</th>
                     <th className="p-3 text-center">عدد الأخطاء المرصودة</th>
                     <th className="p-3 text-center">النسبة المئوية من إجمالي الأخطاء</th>
                   </tr>
@@ -330,6 +432,15 @@ export default function ReportsPage() {
                       <td className="p-3 font-bold text-slate-800 flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5 text-brand-600 flex-shrink-0" />
                         <span>{loc.location}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        {loc.code ? (
+                          <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                            {loc.code}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
                       </td>
                       <td className="p-3 text-center font-black text-rose-700">{loc.count}</td>
                       <td className="p-3 text-center">

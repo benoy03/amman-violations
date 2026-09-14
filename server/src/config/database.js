@@ -69,6 +69,7 @@ function initializeDatabase() {
     -- جدول مواقع كاميرات أمانة عمّان
     CREATE TABLE IF NOT EXISTS camera_locations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT,
       name TEXT UNIQUE NOT NULL,
       zone TEXT NOT NULL,
       is_active INTEGER DEFAULT 1,
@@ -80,6 +81,7 @@ function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       violation_number TEXT UNIQUE NOT NULL,
       violation_date TEXT NOT NULL,
+      jurisdiction TEXT DEFAULT 'سير',
       wrong_vehicle_number TEXT NOT NULL,
       correct_vehicle_number TEXT NOT NULL,
       error_type TEXT NOT NULL,
@@ -92,7 +94,9 @@ function initializeDatabase() {
       reporter_id TEXT NOT NULL,
       reporter_name TEXT NOT NULL,
       camera_location TEXT DEFAULT 'شارع الأردن - دوار الاستقلال',
+      location_code TEXT,
       image_url TEXT,
+      video_url TEXT,
       entry_date TEXT NOT NULL,
       entry_day TEXT NOT NULL,
       notes TEXT,
@@ -116,11 +120,36 @@ function initializeDatabase() {
   try {
     const tableInfo = db.prepare("PRAGMA table_info(violations)").all();
     const colNames = tableInfo.map(c => c.name);
+    if (!colNames.includes('jurisdiction')) {
+      db.exec("ALTER TABLE violations ADD COLUMN jurisdiction TEXT DEFAULT 'سير'");
+    }
     if (!colNames.includes('camera_location')) {
       db.exec("ALTER TABLE violations ADD COLUMN camera_location TEXT DEFAULT 'شارع الأردن - دوار الاستقلال'");
     }
+    if (!colNames.includes('location_code')) {
+      db.exec("ALTER TABLE violations ADD COLUMN location_code TEXT");
+    }
     if (!colNames.includes('image_url')) {
       db.exec("ALTER TABLE violations ADD COLUMN image_url TEXT");
+    }
+    if (!colNames.includes('video_url')) {
+      db.exec("ALTER TABLE violations ADD COLUMN video_url TEXT");
+    }
+
+    const camTableInfo = db.prepare("PRAGMA table_info(camera_locations)").all();
+    const camCols = camTableInfo.map(c => c.name);
+    if (!camCols.includes('code')) {
+      db.exec("ALTER TABLE camera_locations ADD COLUMN code TEXT");
+      // وضع رموز افتراضية للمواقع الحالية إن وجدت
+      try {
+        db.exec(`
+          UPDATE camera_locations SET code = 'CAM-01' WHERE name LIKE '%شارع الأردن%' AND (code IS NULL OR code = '');
+          UPDATE camera_locations SET code = 'CAM-02' WHERE name LIKE '%المطار%' AND (code IS NULL OR code = '');
+          UPDATE camera_locations SET code = 'CAM-03' WHERE name LIKE '%صويلح%' AND (code IS NULL OR code = '');
+          UPDATE camera_locations SET code = 'CAM-04' WHERE name LIKE '%القدس%' AND (code IS NULL OR code = '');
+          UPDATE camera_locations SET code = 'CAM-05' WHERE name LIKE '%الشهيد%' AND (code IS NULL OR code = '');
+        `);
+      } catch {}
     }
   } catch (err) {
     console.error('ملاحظة أثناء التحقق من أعمدة الجدول:', err.message);
@@ -130,6 +159,7 @@ function initializeDatabase() {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_violations_number ON violations(violation_number);
     CREATE INDEX IF NOT EXISTS idx_violations_date ON violations(violation_date);
+    CREATE INDEX IF NOT EXISTS idx_violations_jurisdiction ON violations(jurisdiction);
     CREATE INDEX IF NOT EXISTS idx_violations_entry_date ON violations(entry_date);
     CREATE INDEX IF NOT EXISTS idx_violations_extractor ON violations(extractor_id);
     CREATE INDEX IF NOT EXISTS idx_violations_auditor ON violations(auditor_id);
@@ -154,16 +184,16 @@ function initializeDatabase() {
 
     const locCount = db.prepare("SELECT COUNT(*) as count FROM camera_locations").get();
     if (!locCount || locCount.count === 0) {
-      const insertLoc = db.prepare("INSERT INTO camera_locations (name, zone) VALUES (?, ?)");
+      const insertLoc = db.prepare("INSERT INTO camera_locations (code, name, zone) VALUES (?, ?, ?)");
       const defaultLocations = [
-        ['شارع الأردن - دوار الاستقلال', 'وسط عمّان'],
-        ['شارع المطار - جسر مادبا', 'جنوب عمّان'],
-        ['شارع الملك عبدالله الثاني - صويلح', 'شمال عمّان'],
-        ['شارع القدس - جسر ناعور', 'غرب عمّان'],
-        ['شارع الشهيد - تقاطع المدينة الرياضية', 'وسط عمّان']
+        ['CAM-01', 'شارع الأردن - دوار الاستقلال', 'وسط عمّان'],
+        ['CAM-02', 'شارع المطار - جسر مادبا', 'جنوب عمّان'],
+        ['CAM-03', 'شارع الملك عبدالله الثاني - صويلح', 'شمال عمّان'],
+        ['CAM-04', 'شارع القدس - جسر ناعور', 'غرب عمّان'],
+        ['CAM-05', 'شارع الشهيد - تقاطع المدينة الرياضية', 'وسط عمّان']
       ];
-      for (const [name, zone] of defaultLocations) {
-        insertLoc.run(name, zone);
+      for (const [code, name, zone] of defaultLocations) {
+        insertLoc.run(code, name, zone);
       }
     }
 

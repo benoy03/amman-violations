@@ -15,6 +15,10 @@ import {
   AlertCircle,
   Building2,
   Camera,
+  Video,
+  Play,
+  Upload,
+  Film,
   MapPin,
   Calendar,
   UserCheck,
@@ -54,6 +58,7 @@ export default function ViolationDetailModal({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imageZoom, setImageZoom] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   // موظفون ومواقع لتسهيل التعديل
   const [extractors, setExtractors] = useState([]);
@@ -67,10 +72,12 @@ export default function ViolationDetailModal({
       setFormData({
         violation_number: violation.violation_number || '',
         violation_date: violation.violation_date || '',
+        jurisdiction: violation.jurisdiction || 'سير',
         wrong_vehicle_number: violation.wrong_vehicle_number || '',
         correct_vehicle_number: violation.correct_vehicle_number || '',
         error_type: violation.error_type || '',
         camera_location: violation.camera_location || '',
+        location_code: violation.location_code || '',
         extractor_id: violation.extractor_id || '',
         extractor_name: violation.extractor_name || '',
         auditor_id: violation.auditor_id || '',
@@ -80,11 +87,33 @@ export default function ViolationDetailModal({
         reporter_id: violation.reporter_id || '',
         reporter_name: violation.reporter_name || '',
         image_url: violation.image_url || '',
+        video_url: violation.video_url || '',
         notes: violation.notes || ''
       });
       setMode('view');
     }
   }, [violation]);
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    const data = new FormData();
+    data.append('video', file);
+
+    try {
+      const res = await api.post('/violations/upload-video', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData((prev) => ({ ...prev, video_url: res.data.videoUrl }));
+      toast.success('تم رفع فيديو المخالفة بنجاح');
+    } catch {
+      toast.error('فشل رفع مقطع الفيديو');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
 
   useEffect(() => {
     if (mode === 'edit' && extractors.length === 0) {
@@ -286,12 +315,26 @@ export default function ViolationDetailModal({
                         <span className="font-mono font-black text-slate-800">{violation.violation_number}</span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-slate-100">
+                        <span className="text-slate-500 font-bold">اختصاص المخالفة:</span>
+                        <span
+                          className={`font-black px-2.5 py-0.5 rounded-full text-[11px] border ${
+                            violation.jurisdiction === 'دوريات خارجية'
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          }`}
+                        >
+                          {violation.jurisdiction === 'دوريات خارجية' ? '🚓 دوريات خارجية' : '🚦 سير العاصمة'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-slate-100">
                         <span className="text-slate-500 font-bold">تاريخ المخالفة:</span>
                         <span className="font-bold text-slate-800">{violation.violation_date}</span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-slate-100">
-                        <span className="text-slate-500 font-bold">موقع الكاميرا:</span>
-                        <span className="font-bold text-slate-800">{violation.camera_location}</span>
+                        <span className="text-slate-500 font-bold">موقع الكاميرا ورمزها:</span>
+                        <span className="font-bold text-slate-800">
+                          {violation.camera_location} {violation.location_code ? `[${violation.location_code}]` : ''}
+                        </span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-slate-100">
                         <span className="text-slate-500 font-bold">طبيعة الخطأ:</span>
@@ -347,6 +390,7 @@ export default function ViolationDetailModal({
                   </div>
                 )}
 
+                {/* صورة الكاميرا */}
                 {violation.image_url && (
                   <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
@@ -376,6 +420,30 @@ export default function ViolationDetailModal({
                   </div>
                 )}
 
+                {/* فيديو الكاميرا */}
+                {violation.video_url && (
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <Video className="w-4 h-4 text-amber-500" />
+                        <span>تسجيل فيديو كاميرا المخالفة</span>
+                      </h5>
+                      <a
+                        href={violation.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="no-print text-xs font-bold text-brand-700 hover:underline"
+                      >
+                        فتح / تنزيل الفيديو
+                      </a>
+                    </div>
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-black flex items-center justify-center max-h-80">
+                      <video src={violation.video_url} controls className="max-h-80 w-full object-contain" />
+                    </div>
+                  </div>
+                )}
+
                 {/* مربعات التواقيع الرسمية للطباعة الورقية فقط */}
                 <div className="print-only pt-8 grid grid-cols-4 gap-4 text-center border-t border-slate-400 mt-6">
                   <div className="border border-slate-400 p-3 rounded-lg">
@@ -399,7 +467,7 @@ export default function ViolationDetailModal({
             ) : (
               /* وضع التعديل (Edit Mode) */
               <form onSubmit={handleSaveEdit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       رقم المخالفة
@@ -411,6 +479,20 @@ export default function ViolationDetailModal({
                       onChange={(e) => setFormData({ ...formData, violation_number: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold font-mono focus:bg-white focus:border-brand-500 outline-none"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      اختصاص المخالفة
+                    </label>
+                    <select
+                      value={formData.jurisdiction || 'سير'}
+                      onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold focus:bg-white focus:border-brand-500 outline-none"
+                    >
+                      <option value="سير">🚦 سير العاصمة</option>
+                      <option value="دوريات خارجية">🚓 دوريات خارجية</option>
+                    </select>
                   </div>
 
                   <div>
@@ -475,18 +557,66 @@ export default function ViolationDetailModal({
                     </label>
                     <select
                       value={formData.camera_location}
-                      onChange={(e) => setFormData({ ...formData, camera_location: e.target.value })}
+                      onChange={(e) => {
+                        const locName = e.target.value;
+                        const found = locations.find((l) => l.name === locName);
+                        setFormData({
+                          ...formData,
+                          camera_location: locName,
+                          location_code: (found && found.code) ? found.code : formData.location_code
+                        });
+                      }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold focus:bg-white focus:border-brand-500 outline-none"
                     >
                       {locations.map((loc) => (
                         <option key={loc.id} value={loc.name}>
-                          {loc.name}
+                          {loc.name} {loc.code ? `[${loc.code}]` : ''}
                         </option>
                       ))}
                       {!locations.find((l) => l.name === formData.camera_location) && (
                         <option value={formData.camera_location}>{formData.camera_location}</option>
                       )}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      رمز الموقع (الكود)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location_code || ''}
+                      onChange={(e) => setFormData({ ...formData, location_code: e.target.value.toUpperCase() })}
+                      placeholder="مثال: CAM-01"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase focus:bg-white focus:border-brand-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* خيارات فيديو وصورة المخالفة في التعديل */}
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-amber-500" />
+                    <span>فيديو المخالفة (اختياري)</span>
+                  </label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-brand-500 rounded-xl text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-brand-600" />
+                      <span>{uploadingVideo ? 'جاري الرفع...' : formData.video_url ? 'تغيير الفيديو' : 'إرفاق فيديو'}</span>
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={handleVideoUpload} className="hidden" />
+                    </label>
+                    {formData.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, video_url: '' })}
+                        className="px-2.5 py-2 text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold border border-red-200"
+                      >
+                        إزالة الفيديو
+                      </button>
+                    )}
+                    {formData.video_url && (
+                      <span className="text-[11px] text-emerald-700 font-bold">✓ يوجد فيديو مرفق</span>
+                    )}
                   </div>
                 </div>
 

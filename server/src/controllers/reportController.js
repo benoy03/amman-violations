@@ -6,17 +6,38 @@ const { getDateRange } = require('../utils/dateUtils');
  */
 function getStatistics(req, res, next) {
   try {
-    const { period = 'month', startDate, endDate } = req.query;
+    const { period = 'month', startDate, endDate, jurisdiction } = req.query;
     const range = getDateRange(period, startDate, endDate);
 
+    let dateFilter = `WHERE violation_date >= ? AND violation_date <= ?`;
     const dateParams = [range.startDate, range.endDate];
-    const dateFilter = `WHERE violation_date >= ? AND violation_date <= ?`;
+
+    if (jurisdiction && jurisdiction !== 'الكل' && jurisdiction !== 'all') {
+      dateFilter += ` AND jurisdiction = ?`;
+      dateParams.push(jurisdiction);
+    }
 
     const totalViolations = db.prepare(`
       SELECT COUNT(*) as count FROM violations ${dateFilter}
     `).get(...dateParams).count;
 
     const overallTotal = db.prepare(`SELECT COUNT(*) as count FROM violations`).get().count;
+
+    // 0. تحليل الاختصاص (سير مقابل دوريات خارجية)
+    const overallPeriodTotal = db.prepare(`
+      SELECT COUNT(*) as count FROM violations WHERE violation_date >= ? AND violation_date <= ?
+    `).get(range.startDate, range.endDate).count;
+
+    const jurisdictionStats = db.prepare(`
+      SELECT 
+        COALESCE(jurisdiction, 'سير') as jurisdiction,
+        COUNT(*) as count,
+        ROUND((COUNT(*) * 100.0 / MAX(1, ?)), 1) as percentage
+      FROM violations
+      WHERE violation_date >= ? AND violation_date <= ?
+      GROUP BY jurisdiction
+      ORDER BY count DESC
+    `).all(overallPeriodTotal, range.startDate, range.endDate);
 
     // 1. تحليل طبيعة الأخطاء
     const errorTypesStats = db.prepare(`
@@ -34,6 +55,7 @@ function getStatistics(req, res, next) {
     const cameraLocationsStats = db.prepare(`
       SELECT 
         COALESCE(camera_location, 'غير محدد') as location,
+        COALESCE(location_code, '') as code,
         COUNT(*) as count,
         ROUND((COUNT(*) * 100.0 / MAX(1, ?)), 1) as percentage
       FROM violations
@@ -141,9 +163,11 @@ function getStatistics(req, res, next) {
         topAuditor,
         topModifier,
         topReporter,
-        topCameraHotspot
+        topCameraHotspot,
+        selectedJurisdiction: jurisdiction || 'الكل'
       },
       comparisonSeries,
+      jurisdictionStats,
       errorTypesStats,
       cameraLocationsStats,
       extractorsStats,
