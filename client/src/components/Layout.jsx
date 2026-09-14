@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import { useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('aml_sidebar_collapsed') === 'true';
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     localStorage.setItem('aml_sidebar_collapsed', String(collapsed));
   }, [collapsed]);
 
-  // اختصار لوحة المفاتيح Ctrl + B لتوسيع/تصغير القائمة الجانبية
+  // Ctrl+B shortcut
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
@@ -24,9 +26,19 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-800 flex flex-col antialiased selection:bg-brand-600 selection:text-white">
-      {/* الشريط الجانبي القابل للطي */}
+    <div
+      className="min-h-screen flex flex-col antialiased"
+      style={{
+        background: 'linear-gradient(135deg, #f0f4f8 0%, #eaf0f7 50%, #f0f4f8 100%)',
+      }}
+    >
+      {/* الشريط الجانبي */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -34,28 +46,41 @@ export default function Layout({ children }) {
         setMobileOpen={setMobileOpen}
       />
 
-      {/* منطقة العمل الرئيسية المتجاوبة مع الشريط الجانبي */}
+      {/* منطقة العمل الرئيسية */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-          collapsed ? 'lg:mr-20' : 'lg:mr-72'
-        }`}
+        className="flex-1 flex flex-col transition-all duration-300 ease-in-out"
+        style={{
+          marginRight: collapsed ? '72px' : '288px',
+          minHeight: '100vh',
+        }}
       >
-        {/* الشريط العلوي للـ ERP */}
+        {/* الشريط العلوي */}
         <TopBar onOpenMobile={() => setMobileOpen(true)} />
 
-        {/* مساحة الصفحات والمحتوى */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-          {children}
+        {/* محتوى الصفحة */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="animate-fade-in">
+            {children}
+          </div>
         </main>
 
         {/* التذييل الرسمي */}
-        <footer className="no-print bg-white/70 backdrop-blur-sm border-t border-slate-200/80 py-4 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="font-bold">
+        <footer
+          className="no-print px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
+          style={{
+            borderTop: '1px solid rgba(15,23,42,0.06)',
+            background: 'rgba(255,255,255,0.7)',
+          }}
+        >
+          <p className="font-bold text-slate-500">
             نظام كشف وتعديل مخالفات الكاميرات الرقابية &copy; {new Date().getFullYear()}
           </p>
-          <p className="text-[11px] font-semibold text-slate-400">
-            أمانة عمّان الكبرى — مديرية الرقابة الآلية والتحكم (قسم المخالفات)
-          </p>
+          <div className="flex items-center gap-2 text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <p className="font-semibold">
+              أمانة عمّان الكبرى — مديرية الرقابة الآلية والتحكم
+            </p>
+          </div>
         </footer>
       </div>
     </div>

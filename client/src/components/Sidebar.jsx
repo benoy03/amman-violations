@@ -15,8 +15,7 @@ import {
   ChevronRight,
   ChevronLeft,
   ShieldCheck,
-  Sparkles,
-  Building2
+  Zap,
 } from 'lucide-react';
 
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
@@ -26,12 +25,12 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
     {
       title: 'العمليات التشغيلية',
       items: [
-        { to: '/', label: 'تسجيل مخالفة جديدة', icon: FilePlus, badge: 'إدخال' },
-        { to: '/violations', label: 'سجل المخالفات العام', icon: Table, badge: 'شامل' }
+        { to: '/', label: 'تسجيل مخالفة', icon: FilePlus, badge: 'إدخال', badgeColor: 'blue' },
+        { to: '/violations', label: 'سجل المخالفات', icon: Table, badge: 'شامل', badgeColor: 'slate' }
       ]
     },
     {
-      title: 'كشوفات الوردية والتدقيق',
+      title: 'كشوفات الوردية',
       items: [
         { to: '/sheet/extractor', label: 'كشف المستخرجين', icon: Search },
         { to: '/sheet/auditor', label: 'كشف المدققين', icon: UserCheck },
@@ -40,7 +39,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
       ]
     },
     {
-      title: 'التحليلات والمؤشرات',
+      title: 'التحليلات',
       items: [
         { to: '/reports', label: 'المؤشرات والتقارير', icon: BarChart3 }
       ]
@@ -49,13 +48,20 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
 
   if (isAdmin) {
     navSections.push({
-      title: 'إدارة النظام والرقابة',
+      title: 'إدارة النظام',
       items: [
-        { to: '/admin/employees', label: 'إدارة الكوادر والمواقع', icon: Users, badge: 'مدير' },
-        { to: '/admin/audit', label: 'سجل العمليات والتدقيق', icon: History, badge: 'Audit' }
+        { to: '/admin/employees', label: 'الكوادر والمواقع', icon: Users, badge: 'أدمن', badgeColor: 'amber' },
+        { to: '/admin/audit', label: 'سجل العمليات', icon: History, badge: 'Audit', badgeColor: 'purple' }
       ]
     });
   }
+
+  const badgeColors = {
+    blue: 'bg-brand-900/60 text-brand-300 border-brand-800/60',
+    slate: 'bg-slate-900/60 text-slate-400 border-slate-800/60',
+    amber: 'bg-amber-900/40 text-amber-300 border-amber-800/40',
+    purple: 'bg-purple-900/40 text-purple-300 border-purple-800/40',
+  };
 
   const closeMobile = () => {
     if (mobileOpen) setMobileOpen(false);
@@ -67,63 +73,90 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
       {mobileOpen && (
         <div
           onClick={closeMobile}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 lg:hidden"
+          style={{ background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(4px)' }}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col bg-slate-950 text-white border-l border-slate-800 transition-all duration-300 ease-in-out ${
-          collapsed ? 'w-20' : 'w-72'
+        className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col transition-all duration-300 ease-in-out no-print ${
+          collapsed ? 'w-[72px]' : 'w-72'
         } ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-        } shadow-2xl no-print`}
+        }`}
+        style={{
+          background: 'linear-gradient(180deg, #080f20 0%, #060c18 60%, #05090f 100%)',
+          borderLeft: '1px solid rgba(255,255,255,0.05)',
+          boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
+        }}
       >
-        {/* الترويسة العلوية للـ Sidebar */}
-        <div className="h-20 flex items-center justify-between px-4 border-b border-slate-800/80 bg-gradient-to-b from-slate-900 to-slate-950">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-800 p-0.5 shadow-lg shadow-brand-500/20 flex items-center justify-center flex-shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-brand-400">
-                <Camera className="w-6 h-6 animate-pulse" />
-              </div>
+        {/* ترويسة الشريط الجانبي */}
+        <div
+          className="flex items-center justify-between px-4 border-b flex-shrink-0"
+          style={{
+            height: '72px',
+            borderColor: 'rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+          }}
+        >
+          <div className={`flex items-center gap-3 overflow-hidden ${collapsed ? 'justify-center w-full' : ''}`}>
+            {/* شعار النظام */}
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 relative"
+              style={{
+                background: 'linear-gradient(135deg, rgba(38,104,229,0.5) 0%, rgba(29,82,210,0.3) 100%)',
+                border: '1px solid rgba(38,104,229,0.3)',
+              }}
+            >
+              <Camera className="w-5 h-5 text-brand-300" />
+              {/* نبضة الاتصال */}
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 flex">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+              </span>
             </div>
 
             {!collapsed && (
-              <div className="min-w-0 transition-opacity duration-200">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-black text-white tracking-tight">أمانة عمّان الكبرى</span>
-                </div>
-                <p className="text-[11px] font-bold text-brand-400 truncate">
-                  قسم المخالفات والرقابة الآلية
+              <div className="min-w-0 animate-fade-in">
+                <p className="text-[13px] font-black text-white leading-tight tracking-tight">
+                  أمانة عمّان الكبرى
                 </p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span className="text-[10px] text-slate-400 font-bold">النظام متصل</span>
-                </div>
+                <p className="text-[10px] font-bold text-slate-500 truncate mt-0.5">
+                  قسم المخالفات والرقابة
+                </p>
               </div>
             )}
           </div>
 
-          {/* زر طي الـ Sidebar على الشاشات الكبيرة */}
+          {/* زر الطي - شاشات كبيرة */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex items-center justify-center w-8 h-8 rounded-xl bg-slate-900 hover:bg-brand-900/60 border border-slate-800 text-slate-400 hover:text-white transition"
-            title={collapsed ? 'توسيع القائمة (Ctrl+B)' : 'تصغير القائمة (Ctrl+B)'}
+            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 flex-shrink-0 ${collapsed ? 'w-full justify-center mt-2' : ''}`}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.4)',
+            }}
+            title={collapsed ? 'توسيع (Ctrl+B)' : 'تصغير (Ctrl+B)'}
           >
-            {collapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {collapsed
+              ? <ChevronLeft className="w-3.5 h-3.5" />
+              : <ChevronRight className="w-3.5 h-3.5" />
+            }
           </button>
         </div>
 
-        {/* قائمة الروابط المصنفة */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-800">
+        {/* قائمة التنقل */}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5" style={{ scrollbarWidth: 'none' }}>
           {navSections.map((sec, idx) => (
-            <div key={idx} className="space-y-1.5">
+            <div key={idx}>
               {!collapsed && (
-                <p className="px-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                <p className="px-3 text-[10px] font-extrabold uppercase tracking-widest mb-2"
+                  style={{ color: 'rgba(255,255,255,0.2)' }}>
                   {sec.title}
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {sec.items.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -132,26 +165,78 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
                       to={item.to}
                       end={item.to === '/'}
                       onClick={closeMobile}
-                      className={({ isActive }) =>
-                        `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 relative ${
-                          isActive
-                            ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
-                        } ${collapsed ? 'justify-center' : ''}`
-                      }
                       title={collapsed ? item.label : undefined}
+                      className={({ isActive }) =>
+                        `group relative flex items-center gap-3 rounded-xl text-xs font-bold transition-all duration-200 ${
+                          collapsed ? 'justify-center px-0 py-3' : 'px-3 py-2.5'
+                        } ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-500 hover:text-slate-200'
+                        }`
+                      }
+                      style={({ isActive }) => isActive ? {
+                        background: 'linear-gradient(135deg, rgba(38,104,229,0.3) 0%, rgba(29,82,210,0.2) 100%)',
+                        border: '1px solid rgba(38,104,229,0.25)',
+                        boxShadow: '0 0 12px rgba(38,104,229,0.15)',
+                      } : {
+                        background: 'transparent',
+                        border: '1px solid transparent',
+                      }}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110" />
-
-                      {!collapsed && (
-                        <div className="flex-1 flex items-center justify-between min-w-0">
-                          <span className="truncate">{item.label}</span>
-                          {item.badge && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-900/80 border border-slate-800 text-brand-300 font-bold">
-                              {item.badge}
-                            </span>
+                      {({ isActive }) => (
+                        <>
+                          {/* Indicator line on right for active */}
+                          {isActive && !collapsed && (
+                            <span className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-4/5 rounded-full"
+                              style={{ background: 'linear-gradient(180deg, #3b86f0, #2668e5)' }} />
                           )}
-                        </div>
+                          <div
+                            className={`flex items-center justify-center flex-shrink-0 rounded-xl transition-all duration-200 ${
+                              collapsed ? 'w-10 h-10' : 'w-7 h-7'
+                            }`}
+                            style={isActive ? {
+                              background: 'rgba(38,104,229,0.3)',
+                              color: '#93c5fd',
+                            } : {
+                              background: 'rgba(255,255,255,0.05)',
+                              color: 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            <Icon className={`transition-transform group-hover:scale-110 ${collapsed ? 'w-5 h-5' : 'w-4 h-4'}`} />
+                          </div>
+
+                          {!collapsed && (
+                            <div className="flex-1 flex items-center justify-between min-w-0">
+                              <span className="truncate">{item.label}</span>
+                              {item.badge && (
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.5 rounded-lg border font-black flex-shrink-0 ${
+                                    badgeColors[item.badgeColor] || badgeColors.slate
+                                  }`}
+                                >
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Tooltip for collapsed mode */}
+                          {collapsed && (
+                            <div
+                              className="absolute right-full mr-3 px-3 py-1.5 rounded-xl text-xs font-bold text-white pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50"
+                              style={{
+                                background: 'rgba(15,23,42,0.95)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                              }}
+                            >
+                              {item.label}
+                              <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2 h-2 rotate-45"
+                                style={{ background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none', borderBottom: 'none' }} />
+                            </div>
+                          )}
+                        </>
                       )}
                     </NavLink>
                   );
@@ -159,25 +244,42 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
               </div>
             </div>
           ))}
-        </div>
+        </nav>
 
-        {/* بطاقة المستخدم السريعة أسفل الشريط الجانبي */}
-        <div className="p-3 border-t border-slate-800/80 bg-slate-900/50">
-          <div className={`flex items-center gap-3 p-2 rounded-2xl bg-slate-900 border border-slate-800/80 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white flex items-center justify-center font-black text-xs flex-shrink-0 shadow-md">
-              {user?.full_name ? user.full_name.charAt(0) : 'أ'}
+        {/* بطاقة المستخدم أسفل الشريط */}
+        <div
+          className="p-3 flex-shrink-0"
+          style={{
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+          }}
+        >
+          <div className={`flex items-center gap-3 p-2.5 rounded-2xl transition-all ${collapsed ? 'justify-center' : ''}`}
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* صورة المستخدم */}
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md text-white"
+              style={{ background: 'linear-gradient(135deg, #2668e5, #1e43ab)' }}
+            >
+              {user?.full_name ? user.full_name.charAt(0) : 'م'}
             </div>
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-black text-white truncate">
+                <p className="text-xs font-black text-white truncate leading-tight">
                   {user?.full_name || user?.username}
                 </p>
-                <div className="flex items-center gap-1 text-[11px] text-brand-300 font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
-                  <span>{isAdmin ? 'مدير النظام' : 'موظف رقابة'}</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <ShieldCheck className="w-3 h-3 text-brand-400 flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-slate-500 truncate">
+                    {isAdmin ? 'مدير النظام' : 'موظف رقابة'}
+                  </span>
                 </div>
               </div>
+            )}
+
+            {!collapsed && (
+              <Zap className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 animate-pulse" />
             )}
           </div>
         </div>
