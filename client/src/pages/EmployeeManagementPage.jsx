@@ -22,16 +22,22 @@ import {
   Key,
   Lock,
   UserX,
-  Shield
+  Shield,
+  Sparkles,
+  Check,
+  X,
+  Loader2,
+  Layers,
+  Database
 } from 'lucide-react';
 
 const TABS = [
-  { id: 'extractors', label: 'المستخرجون', singular: 'مستخرج', icon: Search, type: 'employee' },
-  { id: 'auditors', label: 'المدققون', singular: 'مدقق', icon: UserCheck, type: 'employee' },
-  { id: 'modifiers', label: 'المعدلون', singular: 'معدل', icon: FileEdit, type: 'employee' },
-  { id: 'reporters', label: 'المبلغون', singular: 'مبلغ', icon: Radio, type: 'employee' },
-  { id: 'locations', label: 'مواقع الكاميرات', singular: 'موقع كاميرا', icon: MapPin, type: 'location' },
-  { id: 'users', label: 'المستخدمون وكلمات المرور', singular: 'مستخدم', icon: ShieldCheck, type: 'user' }
+  { id: 'extractors', label: 'المستخرجون', singular: 'مستخرج', icon: Search, type: 'employee', color: '#2563eb', bg: 'rgba(37,99,235,0.08)', border: 'rgba(37,99,235,0.2)', grad: 'linear-gradient(135deg, #1d4ed8, #2563eb)' },
+  { id: 'auditors', label: 'المدققون', singular: 'مدقق', icon: UserCheck, type: 'employee', color: '#0284c7', bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.2)', grad: 'linear-gradient(135deg, #0369a1, #0284c7)' },
+  { id: 'modifiers', label: 'المعدلون', singular: 'معدل', icon: FileEdit, type: 'employee', color: '#0d9488', bg: 'rgba(13,148,136,0.08)', border: 'rgba(13,148,136,0.2)', grad: 'linear-gradient(135deg, #0f766e, #0d9488)' },
+  { id: 'reporters', label: 'المبلغون', singular: 'مبلغ', icon: Radio, type: 'employee', color: '#e11d48', bg: 'rgba(225,29,72,0.08)', border: 'rgba(225,29,72,0.2)', grad: 'linear-gradient(135deg, #be123c, #e11d48)' },
+  { id: 'locations', label: 'مواقع الكاميرات', singular: 'موقع كاميرا', icon: MapPin, type: 'location', color: '#d97706', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.2)', grad: 'linear-gradient(135deg, #b45309, #d97706)' },
+  { id: 'users', label: 'المستخدمون والصلاحيات', singular: 'مستخدم', icon: ShieldCheck, type: 'user', color: '#7c3aed', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.2)', grad: 'linear-gradient(135deg, #6d28d9, #7c3aed)' }
 ];
 
 export default function EmployeeManagementPage() {
@@ -128,15 +134,14 @@ export default function EmployeeManagementPage() {
         type: 'success',
         message: res.data.message || 'تمت إضافة الموظف بنجاح'
       });
+      toast.success(res.data.message || 'تمت إضافة الموظف بنجاح');
       setNumber('');
       setName('');
       fetchData();
     } catch (err) {
-      setAlert({
-        show: true,
-        type: 'error',
-        message: err.response?.data?.message || 'حدث خطأ أثناء إضافة الموظف'
-      });
+      const msg = err.response?.data?.message || 'حدث خطأ أثناء إضافة الموظف';
+      setAlert({ show: true, type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setAdding(false);
     }
@@ -162,16 +167,15 @@ export default function EmployeeManagementPage() {
         type: 'success',
         message: 'تمت إضافة موقع الكاميرا بنجاح'
       });
+      toast.success('تمت إضافة موقع الكاميرا بنجاح');
       setLocationCode('');
       setLocationName('');
       setLocationZone('');
       fetchData();
     } catch (err) {
-      setAlert({
-        show: true,
-        type: 'error',
-        message: err.response?.data?.message || 'حدث خطأ أثناء إضافة موقع الكاميرا'
-      });
+      const msg = err.response?.data?.message || 'حدث خطأ أثناء إضافة موقع الكاميرا';
+      setAlert({ show: true, type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setAdding(false);
     }
@@ -212,7 +216,7 @@ export default function EmployeeManagementPage() {
     }
   };
 
-  // إعادة تعيين وتغيير كلمة مرور مستخدم
+  // تغيير كلمة مرور مستخدم
   const handleAdminResetPassword = async (e) => {
     e.preventDefault();
     if (!resetPassModal.user || !resetPassModal.newPassword) return;
@@ -283,65 +287,86 @@ export default function EmployeeManagementPage() {
     try {
       if (deleteModal.isLocation) {
         await api.delete(`/locations/${deleteModal.item.id}`);
-        setAlert({
-          show: true,
-          type: 'success',
-          message: `تم حذف موقع الكاميرا (${deleteModal.item.name}) بنجاح`
-        });
+        toast.success(`تم حذف موقع الكاميرا (${deleteModal.item.name}) بنجاح`);
       } else {
         await api.delete(`/employees/${activeTab}/${encodeURIComponent(deleteModal.item.number)}`);
-        setAlert({
-          show: true,
-          type: 'success',
-          message: `تم إلغاء تفعيل ${currentTabObj.singular} (${deleteModal.item.name}) بنجاح`
-        });
+        toast.success(`تم إلغاء تفعيل ${currentTabObj.singular} (${deleteModal.item.name}) بنجاح`);
       }
       setDeleteModal({ isOpen: false, item: null, isLocation: false, violationsCount: 0, loading: false });
       fetchData();
     } catch (err) {
-      setAlert({
-        show: true,
-        type: 'error',
-        message: err.response?.data?.message || 'فشل الحذف'
-      });
+      toast.error(err.response?.data?.message || 'فشل الحذف');
       setDeleteModal((prev) => ({ ...prev, loading: false }));
     }
   };
 
+  const inputStyle = {
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    color: '#0f172a'
+  };
+
+  const inputFocus = (e) => {
+    e.target.style.borderColor = currentTabObj.color;
+    e.target.style.boxShadow = `0 0 0 3px ${currentTabObj.color}20`;
+    e.target.style.background = '#ffffff';
+  };
+
+  const inputBlur = (e) => {
+    e.target.style.borderColor = '#e2e8f0';
+    e.target.style.boxShadow = 'none';
+    e.target.style.background = '#f8fafc';
+  };
+
+  const currentCount = currentTabObj.type === 'location'
+    ? locations.length
+    : currentTabObj.type === 'user'
+    ? users.length
+    : employees.length;
+
   return (
     <div className="space-y-6">
-      {/* الرأس وعنوان الصفحة */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-rose-600 uppercase tracking-wider bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100 flex items-center gap-1 w-max">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>إعدادات النظام والبيانات الأساسية</span>
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
-            إدارة بيانات الموظفين ومواقع الكاميرات
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            أدخل أرقام وأسماء كادر العمل ومواقع الكاميرات الفعلية في أمانة عمّان لتظهر في القوائم المنسدلة وشاشة الإدخال
+      {/* ترويسة الصفحة الاحترافية */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-black text-brand-700 bg-brand-50/80 border border-brand-200/60 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+              <span>إعدادات النظام والبيانات الأساسية</span>
+            </span>
+            <span className="text-xs font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-xl border border-slate-200/60 flex items-center gap-1">
+              <Database className="w-3.5 h-3.5 text-slate-500" />
+              <span>{currentCount} عنصر مسجل</span>
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            إدارة الكوادر ومواقع الكاميرات
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            إدارة أرقام وأسماء كادر العمل ومواقع الكاميرات في أمانة عمّان لتغذية شاشات الإدخال وشيتات التدقيق
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setBulkModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-black hover:to-slate-950 text-white text-xs font-black shadow-lg shadow-slate-900/20 hover:shadow-xl transition border border-slate-700 w-full md:w-auto transform active:scale-95"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>لصق واستيراد سريع من Excel (Bulk Import)</span>
-        </button>
+        <div className="relative z-10 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setBulkModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-black hover:to-slate-950 text-white text-xs font-black shadow-lg shadow-slate-900/20 hover:shadow-xl transition border border-slate-700 w-full md:w-auto transform active:scale-95"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>لصق واستيراد سريع (Excel Bulk)</span>
+          </button>
+        </div>
       </div>
 
-      {/* التنبيهات */}
+      {/* التنبيهات المدمجة */}
       {alert.show && (
         <div
           className={`p-4 rounded-2xl border flex items-center gap-3 text-xs font-bold animate-in fade-in duration-200 ${
             alert.type === 'success'
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-              : 'bg-rose-50 border-rose-300 text-rose-800'
+              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-800 shadow-sm'
+              : 'bg-rose-50/90 border-rose-300 text-rose-800 shadow-sm'
           }`}
         >
           {alert.type === 'success' ? (
@@ -352,15 +377,15 @@ export default function EmployeeManagementPage() {
           <div className="flex-1">{alert.message}</div>
           <button
             onClick={() => setAlert({ show: false, type: '', message: '' })}
-            className="underline hover:opacity-80"
+            className="text-slate-400 hover:text-slate-700 p-1"
           >
-            إغلاق
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* التبويبات الخمسة */}
-      <div className="flex border-b border-slate-200 gap-2 overflow-x-auto">
+      {/* شريط التبويبات الفاخر */}
+      <div className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/70 flex gap-1.5 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -371,13 +396,30 @@ export default function EmployeeManagementPage() {
                 setActiveTab(tab.id);
                 setAlert({ show: false, type: '', message: '' });
               }}
-              className={`flex items-center gap-2 px-5 py-3.5 font-bold text-xs rounded-t-2xl transition border-t-2 border-x-2 -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all duration-200 whitespace-nowrap ${
                 isActive
-                  ? 'bg-white text-brand-700 border-slate-200 border-t-brand-600 shadow-sm'
-                  : 'bg-slate-100/70 text-slate-600 border-transparent hover:bg-slate-200/60'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
+              style={
+                isActive
+                  ? {
+                      border: `1px solid ${tab.border}`,
+                      color: tab.color,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                    }
+                  : {}
+              }
             >
-              <Icon className="w-4 h-4" />
+              <div
+                className="w-5 h-5 rounded-lg flex items-center justify-center transition-colors"
+                style={{
+                  background: isActive ? tab.bg : 'transparent',
+                  color: isActive ? tab.color : 'inherit'
+                }}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </div>
               <span>{tab.label}</span>
             </button>
           );
@@ -388,25 +430,35 @@ export default function EmployeeManagementPage() {
       {currentTabObj.type === 'location' ? (
         /* تبويب مواقع الكاميرات */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90 h-fit">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 text-slate-900 font-bold text-sm">
+          {/* بطاقة إضافة موقع كاميرا */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 h-fit">
+            <div className="flex items-center justify-between pb-3 mb-5 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-brand-600" />
-                <span>إضافة موقع كاميرا جديد</span>
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">إضافة موقع كاميرا</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">شوارع وتقاطعات عمّان</span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setBulkModalOpen(true)}
-                className="text-[11px] font-black text-brand-700 hover:text-brand-900 flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition"
+                className="text-[11px] font-black flex items-center gap-1 px-2.5 py-1 rounded-lg transition"
+                style={{ background: currentTabObj.bg, color: currentTabObj.color }}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>لصق متعدد</span>
+                <FileSpreadsheet className="w-3 h-3" />
+                <span>لصق Excel</span>
               </button>
             </div>
 
             <form onSubmit={handleAddLocation} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
                   رمز الموقع الفريد (الكود)
                 </label>
                 <input
@@ -414,13 +466,16 @@ export default function EmployeeManagementPage() {
                   placeholder="مثال: CAM-01"
                   value={locationCode}
                   onChange={(e) => setLocationCode(e.target.value.toUpperCase())}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold uppercase outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم موقع الكاميرا (الشارع / التقاطع) <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  اسم موقع الكاميرا (الشارع / التقاطع) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -428,12 +483,15 @@ export default function EmployeeManagementPage() {
                   placeholder="مثال: شارع الأردن - دوار الاستقلال"
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
                   المنطقة (اختياري)
                 </label>
                 <input
@@ -441,80 +499,97 @@ export default function EmployeeManagementPage() {
                   placeholder="مثال: شمال عمّان أو وسط البلد"
                   value={locationZone}
                   onChange={(e) => setLocationZone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={adding}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 text-white font-black rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2 transform active:scale-95"
+                style={{ background: currentTabObj.grad, boxShadow: `0 4px 12px ${currentTabObj.color}40` }}
               >
-                <Plus className="w-4 h-4" />
-                <span>{adding ? 'جاري الإضافة...' : 'إضافة موقع الكاميرا'}</span>
+                {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                <span>{adding ? 'جاري الإضافة...' : 'حفظ موقع الكاميرا'}</span>
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90">
+          {/* جدول مواقع الكاميرات */}
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-brand-600" />
-                <span>مواقع الكاميرات المعتمدة</span>
-              </h3>
-              <span className="text-xs font-bold text-slate-500">
-                الإجمالي: {locations.length} موقع
-              </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900">مواقع الكاميرات المعتمدة</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">كافة نقاط الرقابة المسجلة في العاصمة</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <span>الإجمالي: {locations.length} موقع</span>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200/70">
               <table className="w-full text-right text-xs">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <tr className="bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200/80">
                     <th className="p-3">رمز الموقع</th>
                     <th className="p-3">اسم الموقع (الشارع / التقاطع)</th>
                     <th className="p-3">المنطقة</th>
-                    <th className="p-3 text-center">إجراء</th>
+                    <th className="p-3 text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="4" className="text-center py-8 text-slate-400 font-bold">
-                        جاري تحميل المواقع...
+                      <td colSpan="4" className="text-center py-10 text-slate-400 font-bold">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                          <span>جاري تحميل المواقع...</span>
+                        </div>
                       </td>
                     </tr>
                   ) : locations.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="text-center py-8 text-slate-400 font-bold">
+                      <td colSpan="4" className="text-center py-10 text-slate-400 font-bold">
                         لا توجد مواقع كاميرات مسجلة حالياً. أضف أول موقع من النموذج الجانبي.
                       </td>
                     </tr>
                   ) : (
                     locations.map((loc) => (
-                      <tr key={loc.id} className="hover:bg-slate-50 transition">
+                      <tr key={loc.id} className="hover:bg-slate-50/80 transition">
                         <td className="p-3">
-                          <span className="font-mono font-black text-xs px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-brand-800">
+                          <span className="font-mono font-black text-xs px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg">
                             {loc.code || '-'}
                           </span>
                         </td>
                         <td className="p-3 font-bold text-slate-800">{loc.name}</td>
-                        <td className="p-3 text-slate-600">{loc.zone}</td>
+                        <td className="p-3 text-slate-600 font-medium">{loc.zone}</td>
                         <td className="p-3 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => setEditModal({ isOpen: true, item: loc, isLocation: true })}
-                              className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition"
+                              className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition border border-transparent hover:border-brand-200"
                               title="تعديل موقع الكاميرا"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => openLocationDeleteConfirmation(loc)}
-                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition border border-transparent hover:border-rose-200"
                               title="حذف الموقع"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -527,20 +602,29 @@ export default function EmployeeManagementPage() {
           </div>
         </div>
       ) : currentTabObj.type === 'user' ? (
-        /* تبويب المستخدمين وكلمات المرور والصلاحيات */
+        /* تبويب المستخدمين والصلاحيات */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90 h-fit">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 text-slate-900 font-bold text-sm">
+          {/* بطاقة إضافة مستخدم جديد */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 h-fit">
+            <div className="flex items-center justify-between pb-3 mb-5 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-brand-600" />
-                <span>إضافة مستخدم جديد للنظام</span>
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">إنشاء حساب جديد</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">صلاحيات الدخول للنظام</span>
+                </div>
               </div>
             </div>
 
             <form onSubmit={handleAddUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم المستخدم لتسجيل الدخول (Username) <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  اسم المستخدم للدخول (Username) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -548,13 +632,16 @@ export default function EmployeeManagementPage() {
                   placeholder="مثال: ahmad_aml"
                   value={userUsername}
                   onChange={(e) => setUserUsername(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  الاسم الكامل للموظف <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  الاسم الكامل للموظف <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -562,13 +649,16 @@ export default function EmployeeManagementPage() {
                   placeholder="الاسم الثلاثي أو الرباعي"
                   value={userFullName}
                   onChange={(e) => setUserFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  كلمة المرور الأولية <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  كلمة المرور الأولية <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -576,18 +666,24 @@ export default function EmployeeManagementPage() {
                   placeholder="لا تقل عن 6 خانات"
                   value={userPassword}
                   onChange={(e) => setUserPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
                   نوع الصلاحية
                 </label>
                 <select
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 >
                   <option value="user">موظف إدخال وتدقيق (User)</option>
                   <option value="admin">مدير نظام كامل الصلاحيات (Admin)</option>
@@ -597,58 +693,72 @@ export default function EmployeeManagementPage() {
               <button
                 type="submit"
                 disabled={adding}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 text-white font-black rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2 transform active:scale-95"
+                style={{ background: currentTabObj.grad, boxShadow: `0 4px 12px ${currentTabObj.color}40` }}
               >
-                <UserPlus className="w-4 h-4" />
+                {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                 <span>{adding ? 'جاري الإنشاء...' : 'إنشاء حساب المستخدم'}</span>
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90">
+          {/* جدول المستخدمين */}
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-brand-600" />
-                <span>حسابات المستخدمين وإدارة كلمات المرور</span>
-              </h3>
-              <span className="text-xs font-bold text-slate-500">
-                الإجمالي: {users.length} مستخدم
-              </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900">حسابات مستخدمي النظام</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">إدارة كلمات المرور ومستويات الوصول</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                <span>الإجمالي: {users.length} مستخدم</span>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200/70">
               <table className="w-full text-right text-xs">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <tr className="bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200/80">
                     <th className="p-3">اسم المستخدم</th>
                     <th className="p-3">الاسم الكامل</th>
                     <th className="p-3">الصلاحية</th>
-                    <th className="p-3">الحالة</th>
+                    <th className="p-3 text-center">الحالة</th>
                     <th className="p-3 text-center">كلمة المرور</th>
-                    <th className="p-3 text-center">إجراء</th>
+                    <th className="p-3 text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="6" className="text-center py-8 text-slate-400 font-bold">
-                        جاري تحميل المستخدمين...
+                      <td colSpan="6" className="text-center py-10 text-slate-400 font-bold">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                          <span>جاري تحميل المستخدمين...</span>
+                        </div>
                       </td>
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="text-center py-8 text-slate-400 font-bold">
+                      <td colSpan="6" className="text-center py-10 text-slate-400 font-bold">
                         لا يوجد مستخدمون مسجلون
                       </td>
                     </tr>
                   ) : (
                     users.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50 transition">
-                        <td className="p-3 font-mono font-bold text-brand-900">{u.username}</td>
+                      <tr key={u.id} className="hover:bg-slate-50/80 transition">
+                        <td className="p-3 font-mono font-bold text-purple-900">{u.username}</td>
                         <td className="p-3 font-bold text-slate-800">{u.full_name}</td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-black border ${
                               u.role === 'admin'
                                 ? 'bg-purple-50 text-purple-800 border-purple-200'
                                 : 'bg-slate-100 text-slate-700 border-slate-200'
@@ -657,19 +767,20 @@ export default function EmployeeManagementPage() {
                             {u.role === 'admin' ? 'مدير نظام' : 'موظف'}
                           </span>
                         </td>
-                        <td className="p-3">
-                          <span className={`text-[11px] font-bold ${u.is_active ? 'text-emerald-600' : 'text-slate-400'}`}>
-                            {u.is_active ? '● نشط' : 'معطل'}
+                        <td className="p-3 text-center">
+                          <span className={`text-[11px] font-black inline-flex items-center gap-1 ${u.is_active ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                            <span>{u.is_active ? 'نشط' : 'معطل'}</span>
                           </span>
                         </td>
                         <td className="p-3 text-center">
                           <button
                             type="button"
                             onClick={() => setResetPassModal({ isOpen: true, user: u, newPassword: '', loading: false })}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg font-bold border border-amber-200 transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-200/80 transition shadow-sm text-[11px]"
                             title="تغيير كلمة المرور"
                           >
-                            <Key className="w-3.5 h-3.5" />
+                            <Key className="w-3.5 h-3.5 text-amber-600" />
                             <span>تغيير كلمة السر</span>
                           </button>
                         </td>
@@ -677,10 +788,10 @@ export default function EmployeeManagementPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteUser(u)}
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition border border-transparent hover:border-rose-200"
                             title="حذف الحساب"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
@@ -692,28 +803,38 @@ export default function EmployeeManagementPage() {
           </div>
         </div>
       ) : (
-        /* تبويبات الموظفين (المستخرجين، المدققين، المعدلين، المبلغين) */
+        /* تبويبات الموظفين (مستخرجين، مدققين، معدلين، مبلغين) */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90 h-fit">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 text-slate-900 font-bold text-sm">
+          {/* بطاقة إضافة موظف جديد */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 h-fit">
+            <div className="flex items-center justify-between pb-3 mb-5 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-brand-600" />
-                <span>إضافة {currentTabObj.singular} جديد</span>
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">إضافة {currentTabObj.singular} جديد</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">إدراج بسجلات أمانة عمّان</span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setBulkModalOpen(true)}
-                className="text-[11px] font-black text-brand-700 hover:text-brand-900 flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition"
+                className="text-[11px] font-black flex items-center gap-1 px-2.5 py-1 rounded-lg transition"
+                style={{ background: currentTabObj.bg, color: currentTabObj.color }}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>لصق متعدد من Excel</span>
+                <FileSpreadsheet className="w-3 h-3" />
+                <span>لصق متعدد</span>
               </button>
             </div>
 
             <form onSubmit={handleAddEmployee} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  رقم الموظف في الأمانة <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  رقم الموظف في الأمانة <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -721,13 +842,16 @@ export default function EmployeeManagementPage() {
                   placeholder="مثال: 101 أو 5542"
                   value={number}
                   onChange={(e) => setNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  اسم الموظف الفعلي بالكامل <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  اسم الموظف الفعلي بالكامل <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -735,53 +859,70 @@ export default function EmployeeManagementPage() {
                   placeholder="أدخل الاسم الحقيقي للموظف..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={adding}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 text-white font-black rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2 transform active:scale-95"
+                style={{ background: currentTabObj.grad, boxShadow: `0 4px 12px ${currentTabObj.color}40` }}
               >
-                <UserPlus className="w-4 h-4" />
+                {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                 <span>{adding ? 'جاري الإضافة...' : `إضافة إلى قائمة ${currentTabObj.label}`}</span>
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/90">
+          {/* جدول الموظفين */}
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-brand-600" />
-                <span>قائمة {currentTabObj.label} الفعليين</span>
-              </h3>
-              <span className="text-xs font-bold text-slate-500">
-                الإجمالي: {employees.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: currentTabObj.bg, color: currentTabObj.color }}
+                >
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900">قائمة {currentTabObj.label}</h3>
+                  <span className="text-[11px] font-semibold text-slate-400">الكوادر المفعلة في النظام</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentTabObj.color }} />
+                <span>الإجمالي: {employees.length}</span>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200/70">
               <table className="w-full text-right text-xs">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="p-3">الرقم</th>
+                  <tr className="bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200/80">
+                    <th className="p-3">الرقم الوظيفي</th>
                     <th className="p-3">الاسم الكامل</th>
                     <th className="p-3 text-center">المخالفات المرتبطة</th>
                     <th className="p-3 text-center">الحالة</th>
-                    <th className="p-3 text-center">إجراء</th>
+                    <th className="p-3 text-center">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="5" className="text-center py-8 text-slate-400 font-bold">
-                        جاري التحميل...
+                      <td colSpan="5" className="text-center py-10 text-slate-400 font-bold">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: currentTabObj.color }} />
+                          <span>جاري تحميل البيانات...</span>
+                        </div>
                       </td>
                     </tr>
                   ) : employees.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="text-center py-8 text-slate-400 font-bold">
+                      <td colSpan="5" className="text-center py-10 text-slate-400 font-bold">
                         لا يوجد موظفون مضافون حالياً. استخدم النموذج لإضافة أول {currentTabObj.singular}.
                       </td>
                     </tr>
@@ -789,15 +930,18 @@ export default function EmployeeManagementPage() {
                     employees.map((emp) => (
                       <tr
                         key={emp.id}
-                        className={`hover:bg-slate-50 transition ${
+                        className={`hover:bg-slate-50/80 transition ${
                           emp.is_active === 0 ? 'opacity-50 bg-slate-100/50' : ''
                         }`}
                       >
-                        <td className="p-3 font-black text-slate-900">{emp.number}</td>
+                        <td className="p-3 font-mono font-black text-slate-900">{emp.number}</td>
                         <td className="p-3 font-bold text-slate-800">{emp.name}</td>
                         <td className="p-3 text-center font-black">
                           {emp.violations_count > 0 ? (
-                            <span className="px-2.5 py-1 bg-blue-50 text-blue-800 rounded-lg border border-blue-200">
+                            <span
+                              className="px-2.5 py-1 rounded-lg text-xs font-black border"
+                              style={{ background: currentTabObj.bg, borderColor: currentTabObj.border, color: currentTabObj.color }}
+                            >
                               {emp.violations_count} مخالفة
                             </span>
                           ) : (
@@ -806,11 +950,12 @@ export default function EmployeeManagementPage() {
                         </td>
                         <td className="p-3 text-center">
                           {emp.is_active === 1 ? (
-                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 font-bold text-[11px]">
-                              نشط
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 font-black text-[11px] inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>نشط</span>
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-md font-bold text-[11px]">
+                            <span className="px-2.5 py-1 bg-slate-200 text-slate-600 rounded-lg font-bold text-[11px]">
                               معطل
                             </span>
                           )}
@@ -819,18 +964,18 @@ export default function EmployeeManagementPage() {
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => setEditModal({ isOpen: true, item: emp, isLocation: false })}
-                              className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition border border-transparent hover:border-brand-200"
+                              className="p-2 text-brand-600 hover:bg-brand-50 rounded-xl transition border border-transparent hover:border-brand-200"
                               title="تعديل بيانات الموظف"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             {emp.is_active === 1 && (
                               <button
                                 onClick={() => openDeleteConfirmation(emp)}
-                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition border border-transparent hover:border-rose-200"
+                                className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition border border-transparent hover:border-rose-200"
                                 title="إلغاء التفعيل / حذف"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
@@ -886,20 +1031,31 @@ export default function EmployeeManagementPage() {
 
       {/* نافذة تغيير كلمة المرور للمستخدمين من قِبل المدير */}
       {resetPassModal.isOpen && resetPassModal.user && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
           <div className="relative bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-sm font-black text-slate-900 mb-1 flex items-center gap-2">
-              <Key className="w-4 h-4 text-amber-600" />
-              <span>تغيير كلمة مرور المستخدم</span>
-            </h3>
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Key className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">تغيير كلمة المرور</h3>
+              </div>
+              <button
+                onClick={() => setResetPassModal({ isOpen: false, user: null, newPassword: '', loading: false })}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             <p className="text-xs text-slate-500 mb-4 font-medium">
               تغيير كلمة سر حساب: <span className="font-bold text-slate-800">{resetPassModal.user.username}</span> ({resetPassModal.user.full_name})
             </p>
 
             <form onSubmit={handleAdminResetPassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  كلمة المرور الجديدة (6 خانات على الأقل) <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  كلمة المرور الجديدة (6 خانات على الأقل) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -907,7 +1063,10 @@ export default function EmployeeManagementPage() {
                   placeholder="أدخل كلمة المرور الجديدة"
                   value={resetPassModal.newPassword}
                   onChange={(e) => setResetPassModal((prev) => ({ ...prev, newPassword: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold outline-none transition-all duration-200"
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                 />
               </div>
 
@@ -915,16 +1074,17 @@ export default function EmployeeManagementPage() {
                 <button
                   type="button"
                   onClick={() => setResetPassModal({ isOpen: false, user: null, newPassword: '', loading: false })}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={resetPassModal.loading || resetPassModal.newPassword.length < 6}
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition disabled:opacity-50"
+                  className="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-xs rounded-xl shadow-md transition disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {resetPassModal.loading ? 'جاري التحديث...' : 'حفظ كلمة المرور'}
+                  {resetPassModal.loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
+                  <span>{resetPassModal.loading ? 'جاري التحديث...' : 'حفظ كلمة المرور'}</span>
                 </button>
               </div>
             </form>

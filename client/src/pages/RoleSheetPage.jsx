@@ -4,45 +4,13 @@ import api from '../api/axiosInstance';
 import PrintHeader from '../components/PrintHeader';
 import Pagination from '../components/Pagination';
 import { formatDisplayDate } from '../utils/dateHelpers';
-import {
-  Printer,
-  Search,
-  User,
-  Filter,
-  FileSpreadsheet,
-  AlertCircle,
-  BarChart2
-} from 'lucide-react';
+import { Printer, Search, User, Filter, FileSpreadsheet, AlertCircle, BarChart2, X, RotateCcw } from 'lucide-react';
 
 const ROLE_CONFIGS = {
-  extractor: {
-    title: 'شيت المستخرجين',
-    singular: 'المستخرج',
-    idCol: 'extractor_id',
-    nameCol: 'extractor_name',
-    color: 'blue'
-  },
-  auditor: {
-    title: 'شيت المدققين',
-    singular: 'المدقق',
-    idCol: 'auditor_id',
-    nameCol: 'auditor_name',
-    color: 'sky'
-  },
-  modifier: {
-    title: 'شيت المعدلين',
-    singular: 'المعدل',
-    idCol: 'modifier_id',
-    nameCol: 'modifier_name',
-    color: 'teal'
-  },
-  reporter: {
-    title: 'شيت المبلغين',
-    singular: 'المبلغ',
-    idCol: 'reporter_id',
-    nameCol: 'reporter_name',
-    color: 'rose'
-  }
+  extractor: { title: 'شيت المستخرجين', singular: 'المستخرج', idCol: 'extractor_id', nameCol: 'extractor_name', color: '#1d4ed8', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.15)', gradFrom: '#1e40af', gradTo: '#1d52d2' },
+  auditor: { title: 'شيت المدققين', singular: 'المدقق', idCol: 'auditor_id', nameCol: 'auditor_name', color: '#0369a1', bg: 'rgba(14,165,233,0.08)', border: 'rgba(14,165,233,0.15)', gradFrom: '#0c4a6e', gradTo: '#0369a1' },
+  modifier: { title: 'شيت المعدلين', singular: 'المعدل', idCol: 'modifier_id', nameCol: 'modifier_name', color: '#0f766e', bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.15)', gradFrom: '#134e4a', gradTo: '#0f766e' },
+  reporter: { title: 'شيت المبلغين', singular: 'المبلغ', idCol: 'reporter_id', nameCol: 'reporter_name', color: '#be123c', bg: 'rgba(244,63,94,0.08)', border: 'rgba(244,63,94,0.15)', gradFrom: '#881337', gradTo: '#be123c' }
 };
 
 export default function RoleSheetPage() {
@@ -54,8 +22,6 @@ export default function RoleSheetPage() {
   const [topErrors, setTopErrors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1, limit: 15 });
-
-  // فلاتر
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [search, setSearch] = useState('');
 
@@ -63,12 +29,7 @@ export default function RoleSheetPage() {
     setLoading(true);
     try {
       const res = await api.get(`/violations/by-role/${role}`, {
-        params: {
-          employeeNumber: selectedEmployee || undefined,
-          search: search || undefined,
-          page,
-          limit: 15
-        }
+        params: { employeeNumber: selectedEmployee || undefined, search: search || undefined, page, limit: 15 }
       });
       setViolations(res.data.data || []);
       setEmployeeList(res.data.employeeList || []);
@@ -81,25 +42,18 @@ export default function RoleSheetPage() {
     }
   };
 
-  useEffect(() => {
-    fetchRoleData(1);
-  }, [role, selectedEmployee]);
+  useEffect(() => { fetchRoleData(1); }, [role, selectedEmployee]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    fetchRoleData(1);
-  };
+  const handleSearchSubmit = (e) => { e.preventDefault(); fetchRoleData(1); };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // الموظف المختار حالياً لعرض اسمه في التقرير
   const currentEmpObj = employeeList.find((e) => String(e.number) === String(selectedEmployee));
 
+  const inputStyle = { background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' };
+  const inputFocus = (e) => { e.target.style.borderColor = config.color; e.target.style.boxShadow = `0 0 0 3px ${config.color}22`; e.target.style.background = 'white'; };
+  const inputBlur = (e) => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#f8fafc'; };
+
   return (
-    <div className="space-y-6">
-      {/* ترويسة الطباعة */}
+    <div className="space-y-5">
       <PrintHeader
         title={config.title}
         subtitle={
@@ -109,105 +63,82 @@ export default function RoleSheetPage() {
         }
       />
 
-      {/* الرأس وعناصر التحكم في الشاشة */}
-      <div className="no-print bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* رأس الصفحة */}
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-brand-600 uppercase tracking-wider bg-brand-50 px-2.5 py-1 rounded-md border border-brand-100">
-            شيتات الفحص التخصصية
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
-            {config.title}
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            متابعة دقيقة لعمليات {config.title} مع إمكانية عرض وطباعة الكشف الفردي لكل موظف
-          </p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-extrabold"
+              style={{ background: config.bg, border: `1px solid ${config.border}`, color: config.color }}>
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>شيتات الفحص التخصصية</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold"
+              style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#059669' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{pagination.total?.toLocaleString('ar')} سجل</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900">{config.title}</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">متابعة دقيقة لعمليات {config.title} مع إمكانية عرض وطباعة الكشف الفردي لكل موظف</p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs transition shadow-md shadow-brand-600/30"
-          >
-            <Printer className="w-4 h-4" />
-            <span>طباعة هذا الكشف</span>
-          </button>
-        </div>
+        <button onClick={() => window.print()}
+          className="no-print flex items-center gap-2 px-4 py-2.5 font-black rounded-xl text-xs text-white transition-all duration-200 hover:-translate-y-0.5"
+          style={{ background: `linear-gradient(135deg,${config.gradFrom},${config.gradTo})`, boxShadow: `0 4px 12px ${config.color}40` }}>
+          <Printer className="w-3.5 h-3.5" /><span>طباعة هذا الكشف</span>
+        </button>
       </div>
 
-      {/* شريط الفلترة الفردية والبحث */}
-      <div className="no-print bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+      {/* شريط الفلترة والبحث */}
+      <div className="no-print bg-white rounded-2xl p-5" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* فلتر الموظف الفردي (كشف فردي) */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-brand-600" />
-              <span>تصفية حسب {config.singular} (كشف فردي):</span>
+            <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide flex items-center gap-1">
+              <User className="w-3 h-3" /> تصفية حسب {config.singular}
             </label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-brand-500"
-            >
+            <select value={selectedEmployee} onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all duration-200" style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}>
               <option value="">-- جميع {config.title} (سجل مجمع) --</option>
-              {employeeList.map((emp) => (
-                <option key={emp.number} value={emp.number}>
-                  {emp.number} - {emp.name}
-                </option>
-              ))}
+              {employeeList.map((emp) => (<option key={emp.number} value={emp.number}>{emp.number} - {emp.name}</option>))}
             </select>
           </div>
 
-          {/* البحث السريع */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              بحث في هذا الشيت:
-            </label>
+            <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">بحث في هذا الشيت</label>
             <form onSubmit={handleSearchSubmit} className="flex gap-2">
               <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="بحث برقم المخالفة، رقم اللوحة، نوع الخطأ..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 pl-10 rounded-xl border border-slate-300 text-xs font-medium outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <input type="text" placeholder="بحث برقم المخالفة، رقم اللوحة، نوع الخطأ..." value={search} onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs font-medium outline-none transition-all duration-200" style={inputStyle} onFocus={inputFocus} onBlur={inputBlur} />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                {search && (
+                  <button type="button" onClick={() => setSearch('')} className="absolute left-8 top-2.5 text-slate-400 hover:text-slate-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl transition"
-              >
-                بحث
+              <button type="submit" className="px-5 py-2.5 rounded-xl text-xs font-black text-white flex items-center gap-1.5 transition-all duration-200 hover:-translate-y-0.5"
+                style={{ background: `linear-gradient(135deg,${config.gradFrom},${config.gradTo})`, boxShadow: `0 4px 12px ${config.color}30` }}>
+                <Search className="w-3.5 h-3.5" /><span>بحث</span>
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* بطاقة ملخص الموظف أو الدور */}
+      {/* بطاقة ملخص الموظف الفردي */}
       {selectedEmployee && currentEmpObj && (
-        <div className="bg-gradient-to-r from-brand-900 to-slate-900 text-white rounded-2xl p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{ background: `linear-gradient(135deg,${config.gradFrom},${config.gradTo})` }}>
           <div>
-            <span className="text-[11px] font-bold text-brand-300 uppercase">
-              كشف فردي نشط
-            </span>
-            <h3 className="text-lg font-black mt-0.5">
-              {config.singular}: {currentEmpObj.name} (رقم: {currentEmpObj.number})
-            </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              إجمالي المخالفات المرتبطة بهذا الموظف: <strong className="text-white font-black">{pagination.total}</strong> مخالفة
-            </p>
+            <span className="text-[11px] font-bold opacity-70 uppercase tracking-wider">كشف فردي نشط</span>
+            <h3 className="text-lg font-black text-white mt-0.5">{config.singular}: {currentEmpObj.name} (رقم: {currentEmpObj.number})</h3>
+            <p className="text-xs text-white/70 mt-1">إجمالي المخالفات المرتبطة بهذا الموظف: <strong className="text-white font-black">{pagination.total}</strong> مخالفة</p>
           </div>
-
           {topErrors.length > 0 && (
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-300 font-semibold">أبرز الأخطاء:</span>
+              <span className="text-white/70 font-semibold">أبرز الأخطاء:</span>
               <div className="flex gap-1.5 flex-wrap">
                 {topErrors.map((err) => (
-                  <span
-                    key={err.error_type}
-                    className="px-2.5 py-1 bg-white/10 rounded-lg border border-white/15 text-[11px]"
-                  >
+                  <span key={err.error_type} className="px-2.5 py-1 rounded-lg text-[11px] font-bold" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', color: 'white' }}>
                     {err.error_type} ({err.count})
                   </span>
                 ))}
@@ -218,91 +149,69 @@ export default function RoleSheetPage() {
       )}
 
       {/* جدول البيانات */}
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 overflow-hidden printable-area">
+      <div className="bg-white rounded-2xl overflow-hidden printable-area" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
+          <table className="w-full text-right text-xs">
             <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-800 text-xs font-black uppercase">
-                <th className="p-3.5 w-12 text-center">م</th>
-                <th className="p-3.5">رقم المخالفة</th>
-                <th className="p-3.5">تاريخ المخالفة</th>
-                <th className="p-3.5">المركبة الخطأ</th>
-                <th className="p-3.5">المركبة الصحيح</th>
-                <th className="p-3.5">طبيعة الخطأ</th>
-                <th className="p-3.5">رقم {config.singular}</th>
-                <th className="p-3.5">اسم {config.singular}</th>
-                <th className="p-3.5">تاريخ الإدخال</th>
-                <th className="p-3.5">اليوم</th>
-                <th className="p-3.5">ملاحظات</th>
+              <tr style={{ background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', borderBottom: '2px solid #e2e8f0' }}>
+                <th className="px-3.5 py-3.5 font-black text-slate-700 text-center w-12">م</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">رقم المخالفة</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">تاريخ المخالفة</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">المركبة الخطأ</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">المركبة الصحيح</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">طبيعة الخطأ</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">رقم {config.singular}</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">اسم {config.singular}</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">تاريخ الإدخال</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">اليوم</th>
+                <th className="px-3.5 py-3.5 font-black text-slate-700">ملاحظات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="11" className="text-center py-12 text-slate-400 font-bold">
-                    جاري تحميل السجلات...
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    {Array.from({ length: 11 }).map((_, j) => (
+                      <td key={j} className="px-3.5 py-3.5"><div className="h-4 rounded-lg skeleton" style={{ width: `${50 + Math.random() * 50}%` }} /></td>
+                    ))}
+                  </tr>
+                ))
               ) : violations.length === 0 ? (
-                <tr>
-                  <td colSpan="11" className="text-center py-12 text-slate-400 font-bold">
-                    لا توجد سجلات مطابقة في {config.title}
-                  </td>
-                </tr>
+                <tr><td colSpan="11">
+                  <div className="empty-state">
+                    <div className="empty-state-icon"><AlertCircle /></div>
+                    <p className="empty-state-title">لا توجد سجلات مطابقة في {config.title}</p>
+                    <p className="empty-state-desc">جرب تغيير معايير البحث أو الفلتر</p>
+                  </div>
+                </td></tr>
               ) : (
                 violations.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-brand-50/40 transition odd:bg-white even:bg-slate-50/50"
-                  >
-                    <td className="p-3.5 text-center font-bold text-slate-500">
-                      {(pagination.page - 1) * pagination.limit + index + 1}
-                    </td>
-                    <td className="p-3.5 font-black text-brand-900 whitespace-nowrap">
-                      {item.violation_number}
-                    </td>
-                    <td className="p-3.5 font-semibold text-slate-600 whitespace-nowrap">
-                      {formatDisplayDate(item.violation_date)}
-                    </td>
-                    <td className="p-3.5 font-bold text-rose-700 whitespace-nowrap">
-                      {item.wrong_vehicle_number}
-                    </td>
-                    <td className="p-3.5 font-bold text-emerald-700 whitespace-nowrap">
-                      {item.correct_vehicle_number}
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap">
-                      <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg font-bold text-[11px]">
+                  <tr key={item.id} style={{ borderBottom: '1px solid #f8fafc' }}
+                    onMouseEnter={e => e.currentTarget.style.background = config.bg}
+                    onMouseLeave={e => e.currentTarget.style.background = index % 2 === 0 ? 'white' : '#fafafa'}>
+                    <td className="px-3.5 py-3.5 text-center font-bold text-slate-400">{(pagination.page - 1) * pagination.limit + index + 1}</td>
+                    <td className="px-3.5 py-3.5 font-black whitespace-nowrap" style={{ color: config.color }}>{item.violation_number}</td>
+                    <td className="px-3.5 py-3.5 font-semibold text-slate-600 whitespace-nowrap">{formatDisplayDate(item.violation_date)}</td>
+                    <td className="px-3.5 py-3.5 font-bold text-rose-700 whitespace-nowrap">{item.wrong_vehicle_number}</td>
+                    <td className="px-3.5 py-3.5 font-bold text-emerald-700 whitespace-nowrap">{item.correct_vehicle_number}</td>
+                    <td className="px-3.5 py-3.5 whitespace-nowrap">
+                      <span className="px-2.5 py-1 rounded-lg font-bold text-[11px]"
+                        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#92400e' }}>
                         {item.error_type}
                       </span>
                     </td>
-                    <td className="p-3.5 whitespace-nowrap font-black text-slate-900">
-                      {item[config.idCol]}
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap font-bold text-brand-800">
-                      {item[config.nameCol]}
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap text-slate-500">
-                      {formatDisplayDate(item.entry_date)}
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap font-bold text-slate-800">
-                      {item.entry_day}
-                    </td>
-                    <td className="p-3.5 text-slate-500 max-w-xs truncate">
-                      {item.notes || '-'}
-                    </td>
+                    <td className="px-3.5 py-3.5 whitespace-nowrap font-black text-slate-900">{item[config.idCol]}</td>
+                    <td className="px-3.5 py-3.5 whitespace-nowrap font-bold" style={{ color: config.color }}>{item[config.nameCol]}</td>
+                    <td className="px-3.5 py-3.5 whitespace-nowrap text-slate-500">{formatDisplayDate(item.entry_date)}</td>
+                    <td className="px-3.5 py-3.5 whitespace-nowrap font-bold text-slate-800">{item.entry_day}</td>
+                    <td className="px-3.5 py-3.5 text-slate-500 max-w-xs truncate">{item.notes || <span className="text-slate-300">—</span>}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
-
-        <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
-          totalItems={pagination.total}
-          onPageChange={(p) => fetchRoleData(p)}
-        />
+        <Pagination currentPage={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.total} onPageChange={(p) => fetchRoleData(p)} />
       </div>
     </div>
   );
