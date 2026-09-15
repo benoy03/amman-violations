@@ -73,13 +73,13 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
       {mobileOpen && (
         <div
           onClick={closeMobile}
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-40 lg:hidden touch-none"
           style={{ background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(4px)' }}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col transition-all duration-300 ease-in-out no-print ${
+        className={`fixed top-0 bottom-0 right-0 z-50 flex flex-col transition-all duration-300 ease-in-out no-print ${
           collapsed ? 'w-[72px]' : 'w-72'
         } ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
@@ -94,7 +94,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         <div
           className="flex items-center justify-between px-4 border-b flex-shrink-0"
           style={{
-            height: '72px',
+            height: '64px',
             borderColor: 'rgba(255,255,255,0.06)',
             background: 'rgba(255,255,255,0.02)',
           }}

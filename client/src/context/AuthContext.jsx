@@ -10,13 +10,17 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function verifyUser() {
-      if (token) {
+      const storedToken = localStorage.getItem('aml_auth_token');
+      if (storedToken) {
         try {
           const res = await api.get('/auth/me');
           if (res.data && res.data.user) {
             setUser(res.data.user);
+          } else {
+            logout();
           }
         } catch {
+          // Token is invalid, expired, or server returned 401/403
           logout();
         }
       }

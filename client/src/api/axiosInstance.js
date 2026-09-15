@@ -23,7 +23,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+    // 401 = no token / 403 = invalid or expired token
+    if (status === 401 || status === 403) {
       localStorage.removeItem('aml_auth_token');
       localStorage.removeItem('aml_user_info');
       if (window.location.pathname !== '/login') {

@@ -48,17 +48,15 @@ export default function Layout({ children }) {
 
       {/* منطقة العمل الرئيسية */}
       <div
-        className="flex-1 flex flex-col transition-all duration-300 ease-in-out"
-        style={{
-          marginRight: collapsed ? '72px' : '288px',
-          minHeight: '100vh',
-        }}
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${
+          collapsed ? 'lg:mr-[72px]' : 'lg:mr-72'
+        }`}
       >
         {/* الشريط العلوي */}
         <TopBar onOpenMobile={() => setMobileOpen(true)} />
 
         {/* محتوى الصفحة */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="animate-fade-in">
             {children}
           </div>

@@ -86,9 +86,9 @@ export default function TopBar({ onOpenMobile }) {
   return (
     <>
       <header
-        className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 no-print"
+        className="sticky top-0 z-20 flex items-center justify-between px-3 sm:px-6 no-print"
         style={{
-          height: '72px',
+          height: '64px',
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
@@ -109,8 +109,8 @@ export default function TopBar({ onOpenMobile }) {
           </button>
 
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-xs">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-extrabold"
+          <nav className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold flex-shrink-0"
               style={{
                 background: 'rgba(38,104,229,0.08)',
                 border: '1px solid rgba(38,104,229,0.12)',
@@ -120,10 +120,10 @@ export default function TopBar({ onOpenMobile }) {
               <span className="hidden sm:inline">أمانة عمّان</span>
             </div>
 
-            <ChevronLeft className="w-3.5 h-3.5 text-slate-300" />
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
 
-            <div className="flex items-center gap-2">
-              <span className="font-black text-slate-800 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-black text-slate-800 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                 {routeMeta.name}
               </span>
             </div>
@@ -186,7 +186,7 @@ export default function TopBar({ onOpenMobile }) {
             {/* القائمة المنسدلة */}
             {profileOpen && (
               <div
-                className="absolute left-0 mt-2 w-72 rounded-2xl overflow-hidden z-50 animate-slide-down"
+                className="absolute left-0 sm:left-0 right-0 sm:right-auto mt-2 w-72 rounded-2xl overflow-hidden z-50 animate-slide-down"
                 style={{
                   background: 'rgba(255,255,255,0.98)',
                   backdropFilter: 'blur(20px)',

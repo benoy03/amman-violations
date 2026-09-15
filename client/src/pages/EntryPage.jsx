@@ -243,23 +243,23 @@ export default function EntryPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* رأس الصفحة */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-extrabold" style={{ background: 'rgba(38,104,229,0.08)', border: '1px solid rgba(38,104,229,0.12)', color: '#1d52d2' }}>
-              <Building2 className="w-3.5 h-3.5" /><span>أمانة عمّان الكبرى</span>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-xs font-extrabold" style={{ background: 'rgba(38,104,229,0.08)', border: '1px solid rgba(38,104,229,0.12)', color: '#1d52d2' }}>
+              <Building2 className="w-3 h-3" /><span>أمانة عمّان</span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#059669' }}>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#059669' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>جاهز للإدخال</span>
             </div>
           </div>
-          <h1 className="text-2xl font-black text-slate-900">كشف تعديل مخالفات الكاميرات</h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">إدخال وتدقيق بيانات تعديل مخالفات كاميرات الرقابة مع مقارنة بصرية ذكية للوحات الأردنية</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">كشف تعديل مخالفات الكاميرات</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1 hidden sm:block">إدخال وتدقيق بيانات تعديل مخالفات كاميرات الرقابة مع مقارنة بصرية ذكية للوحات الأردنية</p>
         </div>
-        <button onClick={() => window.print()} type="button" className="no-print flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)', color: '#475569' }}>
+        <button onClick={() => window.print()} type="button" className="no-print hidden sm:flex items-center gap-2 px-4 py-2.5 font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)', color: '#475569' }}>
           <Printer className="w-3.5 h-3.5" /><span>طباعة النموذج</span>
         </button>
       </div>
@@ -284,16 +284,16 @@ export default function EntryPage() {
 
       <form id="violation-entry-form" onSubmit={handleSubmit} className="space-y-4">
         {/* القسم 1: بيانات المخالفة والمركبة */}
-        <div className="bg-white rounded-2xl p-6 space-y-5" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="bg-white rounded-2xl p-3 sm:p-5 space-y-4" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <SectionHeader icon={Car} title="بيانات المخالفة والمركبة والكاميرا" />
 
           {/* اختيار الاختصاص */}
-          <div className="p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div className="p-3 sm:p-4 rounded-2xl flex flex-col gap-3" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
             <div>
               <p className="text-xs font-black text-slate-800">اختصاص المخالفة <span className="text-rose-500">*</span></p>
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">حدد اختصاص المخالفة إن كانت سير أو دوريات خارجية</p>
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: '#e2e8f0' }}>
+            <div className="flex items-center gap-1 p-1 rounded-xl self-start" style={{ background: '#e2e8f0' }}>
               {[{ val: 'سير', label: 'سير العاصمة', emoji: '🚦', activeStyle: { background: 'linear-gradient(135deg,#2668e5,#1d52d2)', color: 'white', boxShadow: '0 2px 8px rgba(38,104,229,0.35)' } }, { val: 'دوريات خارجية', label: 'دوريات خارجية', emoji: '🚓', activeStyle: { background: 'linear-gradient(135deg,#d97706,#b45309)', color: 'white', boxShadow: '0 2px 8px rgba(217,119,6,0.35)' } }].map(j => (
                 <button key={j.val} type="button" onClick={() => setFormData({ ...formData, jurisdiction: j.val })}
                   className="px-5 py-2 rounded-lg text-xs font-black transition-all duration-200 flex items-center gap-2"
@@ -304,9 +304,9 @@ export default function EntryPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* 1. رقم المخالفة */}
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">1. رقم المخالفة <span className="text-rose-500">*</span></label>
               <div className="relative">
                 <input ref={violationInputRef} id="violation-number-input" type="text" required placeholder="مثال: GAM-2026-1050"
@@ -351,21 +351,21 @@ export default function EntryPage() {
             </div>
 
             {/* 3. رقم المركبة الخطأ */}
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">3. رقم المركبة الخطأ (لوحة أردنية) <span className="text-rose-500">*</span></label>
               <input type="text" required placeholder="مثال: 50-98432 أو 10-12456" value={formData.wrong_vehicle_number} onChange={(e) => setFormData({ ...formData, wrong_vehicle_number: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm font-black outline-none transition-all duration-200" style={{ ...inputStyle, color: '#be123c' }} onFocus={inputFocus} onBlur={inputBlur} />
             </div>
 
             {/* 4. رقم المركبة الصحيح */}
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">4. رقم المركبة الصحيح (بعد التدقيق) <span className="text-rose-500">*</span></label>
               <input type="text" required placeholder="مثال: 50-98423 أو 10-12458" value={formData.correct_vehicle_number} onChange={(e) => setFormData({ ...formData, correct_vehicle_number: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm font-black outline-none transition-all duration-200" style={{ ...inputStyle, color: '#059669' }} onFocus={inputFocus} onBlur={inputBlur} />
             </div>
 
             {/* 5. طبيعة الخطأ */}
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">5. طبيعة الخطأ <span className="text-rose-500">*</span></label>
               <select required value={formData.error_type} onChange={(e) => setFormData({ ...formData, error_type: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all duration-200" style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}>
@@ -438,7 +438,7 @@ export default function EntryPage() {
         </div>
 
         {/* القسم 2: بيانات الموظفين */}
-        <div className="bg-white rounded-2xl p-6" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="bg-white rounded-2xl p-3 sm:p-5" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <SectionHeader icon={User} title="فريق العمل والمسؤولون عن السجل">
             <button type="button" onClick={() => setPinShiftData(!pinShiftData)}
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200"
@@ -449,7 +449,7 @@ export default function EntryPage() {
             </button>
           </SectionHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {teamRoles.map((role) => (
               <div key={role.key} className="p-4 rounded-2xl space-y-3" style={{ background: role.bg, border: `1px solid ${role.border}` }}>
                 <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-lg" style={{ background: role.bg, color: role.color, border: `1px solid ${role.border}` }}>{role.label}</span>
@@ -476,9 +476,9 @@ export default function EntryPage() {
         </div>
 
         {/* القسم 3: تاريخ ويوم الإدخال والملاحظات */}
-        <div className="bg-white rounded-2xl p-6" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="bg-white rounded-2xl p-3 sm:p-5" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <SectionHeader icon={Calendar} title="بيانات الإدخال والتوثيق" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[11px] font-extrabold text-slate-600 mb-1.5 uppercase tracking-wide">14. التاريخ (تاريخ الإدخال) <span className="text-rose-500">*</span></label>
               <input type="date" required value={formData.entry_date} onChange={handleEntryDateChange}
@@ -499,7 +499,7 @@ export default function EntryPage() {
         </div>
 
         {/* زر الترحيل الرئيسي */}
-        <div className="bg-white rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="bg-white rounded-2xl p-3 sm:p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div className="text-[11px] text-slate-500 font-medium">
             * الحقول الموسومة بعلامة (<span className="text-rose-500">*</span>) إلزامية.
             <span className="mr-3 text-slate-400">اختصار: <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded-md">Ctrl+Enter</kbd></span>
