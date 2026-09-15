@@ -3,16 +3,28 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useLocation } from 'react-router-dom';
 
+const LG_BREAKPOINT = 1024;
+
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('aml_sidebar_collapsed') === 'true';
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= LG_BREAKPOINT);
   const location = useLocation();
 
   useEffect(() => {
     localStorage.setItem('aml_sidebar_collapsed', String(collapsed));
   }, [collapsed]);
+
+  // Track desktop vs mobile
+  useEffect(() => {
+    function onResize() {
+      setIsDesktop(window.innerWidth >= LG_BREAKPOINT);
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Ctrl+B shortcut
   useEffect(() => {
@@ -31,6 +43,8 @@ export default function Layout({ children }) {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  const sidebarWidth = isDesktop ? (collapsed ? '72px' : '288px') : '0px';
+
   return (
     <div
       className="min-h-screen flex flex-col antialiased"
@@ -48,9 +62,8 @@ export default function Layout({ children }) {
 
       {/* منطقة العمل الرئيسية */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen ${
-          collapsed ? 'lg:mr-[72px]' : 'lg:mr-72'
-        }`}
+        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
+        style={{ marginRight: sidebarWidth }}
       >
         {/* الشريط العلوي */}
         <TopBar onOpenMobile={() => setMobileOpen(true)} />
