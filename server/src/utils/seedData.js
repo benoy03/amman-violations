@@ -2,95 +2,62 @@
  * ==============================================================================
  * 🏛️ المملكة الأردنية الهاشمية — أمانة عمّان الكبرى
  * 🚔 مديرية الرقابة الآلية والتحكم — قسم كشف وتعديل مخالفات الكاميرات
- * 📋 ملف إدخال وتغذية البيانات الحقيقية (Professional Seed Data Template)
- * ==============================================================================
- * 
- * 💡 كيفية الاستخدام:
- * 1. قم بكتابة أو نسخ ولصق أسماء وأرقام كادر العمل ومواقع الكاميرات في القوائم أدناه.
- * 2. يمكنك نسخ الأعمدة من ملف Excel أو كتابتها يدوياً بالصيغة:
- *    { number: 'الرقم', name: 'الاسم الحقيقي بالكامل' }
- * 3. بعد الانتهاء، احفظ الملف وشغّل الأمر التالي في موجه الأوامر (Terminal):
- *    npm run seed
+ * 📋 ملف إدخال وتغذية البيانات الحقيقية المحمية (Safe Seed Data)
  * ==============================================================================
  */
 
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 
-// ==============================================================================
-// 1️⃣ قائمة المستخرجين (Extractors)
-// أدخل رقم واسم كل موظف مستخرج هنا
-// ==============================================================================
-const extractors = [
-  // { number: '101', name: 'أحمد محمود العبداللات' },
-  // { number: '102', name: 'محمد خليل العدوان' },
-  // { number: '103', name: 'طارق زياد المجالي' },
+const employeesList = [
+  { number: '101', name: 'أحمد عادل' },
+  { number: '102', name: 'محمد خليل العدوان' },
+  { number: '103', name: 'طارق زياد المجالي' },
+  { number: '104', name: 'عمر إبراهيم الحديد' },
+  { number: '105', name: 'حمزة صالح المناصير' },
+  { number: '26708', name: 'عبد الله النسور' },
+  { number: '33718', name: 'مهند القضاة' },
+  { number: '34063', name: 'محمد الرواشدة' },
+  { number: '34617', name: 'ليث المعايطة' },
+  { number: '37558', name: 'أنس الزعبي' },
+  { number: '38783', name: 'يزن سامي الحنيطي' },
+  { number: '44895', name: 'زيد العبادي' },
+  { number: '47377', name: 'بلال حسن الزعبي' },
+  { number: '47806', name: 'عبدالله ناصر العرموطي' },
+  { number: '49659', name: 'خالد مروان الفايز' },
+  { number: '49729', name: 'سليمان فهد الدعجة' },
+  { number: '57154', name: 'معاذ عيسى القضاة' },
+  { number: '66094', name: 'فيصل الخصاونة' },
+  { number: '69833', name: 'فيصل راشد الطراونة' },
+  { number: '72974', name: 'سيف الحنيطي' },
+  { number: '106', name: 'أحمد محمود العبداللات' }
 ];
 
-// ==============================================================================
-// 2️⃣ قائمة المدققين (Auditors)
-// أدخل رقم واسم كل موظف مدقق هنا
-// ==============================================================================
-const auditors = [
-  // { number: '201', name: 'عمر إبراهيم الحديد' },
-  // { number: '202', name: 'حمزة صالح المناصير' },
-  // { number: '203', name: 'خالد مروان الفايز' },
-];
-
-// ==============================================================================
-// 3️⃣ قائمة المعدلين (Modifiers)
-// أدخل رقم واسم كل موظف معدل هنا
-// ==============================================================================
-const modifiers = [
-  // { number: '301', name: 'سليمان فهد الدعجة' },
-  // { number: '302', name: 'يزن سامي الحنيطي' },
-  // { number: '303', name: 'عبدالله ناصر العرموطي' },
-];
-
-// ==============================================================================
-// 4️⃣ قائمة المبلّغين (Reporters)
-// أدخل رقم واسم كل موظف مبلّغ هنا
-// ==============================================================================
-const reporters = [
-  // { number: '401', name: 'بلال حسن الزعبي' },
-  // { number: '402', name: 'معاذ عيسى القضاة' },
-  // { number: '403', name: 'فيصل راشد الطراونة' },
-];
-
-// ==============================================================================
-// 5️⃣ مواقع كاميرات أمانة عمّان الكبرى (Camera Locations)
-// أدخل اسم الموقع/الشارع والمنطقة التابعة لها
-// ==============================================================================
 const cameraLocations = [
-  // { name: 'شارع الأردن - دوار الاستقلال', zone: 'شمال عمّان' },
-  // { name: 'شارع مكة - تقاطع الحرمين', zone: 'غرب عمّان' },
-  // { name: 'شارع زهران - إشارات الدوار الثامن', zone: 'غرب عمّان' },
-  // { name: 'شارع الشهيد - إشارة طبربور', zone: 'شمال عمّان' },
-  // { name: 'طريق المطار - جسر مادبا', zone: 'جنوب عمّان' },
-  // { name: 'شارع المدينة المنورة - تقاطع الكيلو', zone: 'غرب عمّان' },
-  // { name: 'شارع وصفي التل (الجاردنز) - إشارة الواحة', zone: 'شمال عمّان' },
-  // { name: 'شارع اليرموك - وادي الرمم', zone: 'شرق عمّان' },
+  { code: 'CAM-01', name: 'شارع الأردن - دوار الاستقلال', zone: 'شمال عمّان' },
+  { code: 'CAM-02', name: 'شارع مكة - تقاطع الحرمين', zone: 'غرب عمّان' },
+  { code: 'CAM-03', name: 'شارع زهران - إشارات الدوار الثامن', zone: 'غرب عمّان' },
+  { code: 'CAM-04', name: 'شارع الشهيد - إشارة طبربور', zone: 'شمال عمّان' },
+  { code: 'CAM-05', name: 'طريق المطار - جسر مادبا', zone: 'جنوب عمّان' },
+  { code: 'CAM-06', name: 'شارع المدينة المنورة - تقاطع الكيلو', zone: 'غرب عمّان' },
+  { code: 'CAM-07', name: 'شارع وصفي التل (الجاردنز) - إشارة الواحة', zone: 'شمال عمّان' },
+  { code: 'CAM-08', name: 'شارع اليرموك - وادي الرمم', zone: 'شرق عمّان' },
+  { code: 'CAM-09', name: 'أوتوستراد الزرقاء - ماركا', zone: 'شرق عمّان' }
 ];
 
-// ==============================================================================
-// ⚙️ معالج التغذية والحفظ في قاعدة البيانات (Execution Engine)
-// ==============================================================================
 function seedDatabase() {
   console.log('\n======================================================');
   console.log('🏛️ بدء تغذية وتحديث قاعدة بيانات أمانة عمّان الكبرى...');
   console.log('======================================================\n');
 
-  // تنظيف السجلات القديمة وإعادة التهيئة
-  db.exec(`
-    DELETE FROM violations;
-    DELETE FROM extractors;
-    DELETE FROM auditors;
-    DELETE FROM modifiers;
-    DELETE FROM reporters;
-    DELETE FROM camera_locations;
-    DELETE FROM audit_logs;
-    DELETE FROM users;
-  `);
+  // فقط في حال طلب إعادة التهيئة الكاملة صراحةً
+  if (process.env.FORCE_RESET === 'true') {
+    console.log('⚠️ تم تفعيل FORCE_RESET: جاري مسح السجلات وإعادة البناء...');
+    db.exec(`
+      DELETE FROM violations;
+      DELETE FROM audit_logs;
+    `);
+  }
 
   // 1. إنشاء حسابات الدخول الرسمية للنظام
   const adminHash = bcrypt.hashSync('admin123', 10);
@@ -99,52 +66,48 @@ function seedDatabase() {
   const insertUser = db.prepare(`
     INSERT INTO users (username, password_hash, full_name, role)
     VALUES (?, ?, ?, ?)
+    ON CONFLICT(username) DO UPDATE SET
+      password_hash = excluded.password_hash,
+      full_name = excluded.full_name
   `);
 
   insertUser.run('admin', adminHash, 'مدير قسم المخالفات - أمانة عمّان', 'admin');
   insertUser.run('user', userHash, 'موظف الرقابة والتدقيق', 'user');
-  console.log('✅ تم تجهيز حسابات الدخول الرسمية:');
-  console.log('   👤 مدير النظام:  admin / admin123');
-  console.log('   👤 موظف الرقابة: user  / user123');
+  console.log('✅ تم تجهيز حسابات الدخول الرسمية: admin / user');
 
-  // 2. إدراج الموظفين (Transaction)
-  const insertRole = (tableName, items, roleLabel) => {
-    if (!items || items.length === 0) {
-      console.log(`ℹ️ [${roleLabel}]: لا توجد عناصر مدخلة في القائمة حالياً.`);
-      return;
-    }
-    const stmt = db.prepare(`INSERT INTO ${tableName} (number, name) VALUES (?, ?)`);
-    const insertMany = db.transaction((rows) => {
-      for (const row of rows) {
-        if (row.number && row.name) {
-          stmt.run(String(row.number).trim(), String(row.name).trim());
-        }
+  // 2. إدراج وتحديث الموظفين
+  const roles = ['extractors', 'auditors', 'modifiers', 'reporters'];
+  for (const role of roles) {
+    const stmt = db.prepare(`
+      INSERT INTO ${role} (number, name, is_active)
+      VALUES (?, ?, 1)
+      ON CONFLICT(number) DO UPDATE SET name = excluded.name, is_active = 1
+    `);
+    const insertMany = db.transaction((items) => {
+      for (const item of items) {
+        stmt.run(String(item.number).trim(), String(item.name).trim());
       }
     });
-    insertMany(items);
-    console.log(`✅ تم إدراج (${items.length}) من [${roleLabel}] بنجاح.`);
-  };
-
-  insertRole('extractors', extractors, 'المستخرجين');
-  insertRole('auditors', auditors, 'المدققين');
-  insertRole('modifiers', modifiers, 'المعدلين');
-  insertRole('reporters', reporters, 'المبلغين');
+    insertMany(employeesList);
+    console.log(`✅ تم تحديث/إدراج (${employeesList.length}) موظف في جدول [${role}].`);
+  }
 
   // 3. إدراج مواقع الكاميرات
-  if (cameraLocations && cameraLocations.length > 0) {
-    const locStmt = db.prepare(`INSERT INTO camera_locations (name, zone) VALUES (?, ?)`);
-    const insertLocations = db.transaction((rows) => {
-      for (const row of rows) {
-        if (row.name) {
-          locStmt.run(String(row.name).trim(), row.zone ? String(row.zone).trim() : 'عمّان');
-        }
-      }
-    });
-    insertLocations(cameraLocations);
-    console.log(`✅ تم إدراج (${cameraLocations.length}) من [مواقع الكاميرات] بنجاح.`);
-  } else {
-    console.log(`ℹ️ [مواقع الكاميرات]: لا توجد مواقع مدخلة في القائمة حالياً.`);
-  }
+  const locStmt = db.prepare(`
+    INSERT INTO camera_locations (code, name, zone, is_active)
+    VALUES (?, ?, ?, 1)
+    ON CONFLICT(name) DO UPDATE SET code = excluded.code, zone = excluded.zone, is_active = 1
+  `);
+  const insertLocations = db.transaction((rows) => {
+    for (const row of rows) {
+      locStmt.run(row.code, row.name, row.zone);
+    }
+  });
+  insertLocations(cameraLocations);
+  console.log(`✅ تم تحديث/إدراج (${cameraLocations.length}) موقع كاميرا.`);
+
+  const vCount = db.prepare('SELECT COUNT(*) as c FROM violations').get().c;
+  console.log(`\n📊 إجمالي المخالفات في النظام: ${vCount} مخالفة (محمية ومحفوظة).`);
 
   console.log('\n======================================================');
   console.log('✨ اكتملت العملية بنجاح! قاعدة البيانات جاهزة 100%.');
